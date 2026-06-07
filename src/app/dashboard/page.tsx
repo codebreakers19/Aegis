@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAegisChainData, type GuardianPolicyRecord, type ReceiptRecord } from "@/hooks/useAegisChainData";
-import type { GuardianResult } from "@/lib/guardian";
+import type { GuardianResult, StressScenario } from "@/lib/guardian";
 import type { ParsedIntent } from "@/lib/intent";
 import {
   buildCreatePolicyTransaction,
@@ -16,6 +16,7 @@ import {
   createExecutionPlan,
   executionConfig,
   executionBlockReason,
+  isPlanFresh,
   simulateTransaction,
   SUI_DBUSDC_POOL_ID,
   type ExecutionPlan,
@@ -61,6 +62,19 @@ function Field({ label, value }: { label: string; value: string }) {
   return <div className="parsed-field"><small>{label}</small><b>{value}</b></div>;
 }
 
+function PolicyExpiryCountdown({ expiresAtMs }: { expiresAtMs: number }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const remaining = Math.max(0, expiresAtMs - now);
+  if (!remaining) return <span className="expiry-countdown expired">Expired</span>;
+  const hours = Math.floor(remaining / 3_600_000);
+  const minutes = Math.floor((remaining % 3_600_000) / 60_000);
+  return <span className="expiry-countdown">Expires in {hours}h {minutes}m</span>;
+}
+
 function RiskRows({ result }: { result: GuardianResult }) {
   return <div className="risk-rows">{result.findings.map((risk) => <div className="risk-row" key={risk.id}><span className="risk-name"><i className={risk.score > 70 ? "red" : risk.score >= 40 ? "amber" : "green"} />{risk.label}</span><span className="risk-mini"><i style={{ width: `${risk.score}%` }} /></span><code>{risk.score}/100</code></div>)}</div>;
 }
@@ -94,7 +108,7 @@ function PolicyPage({ policies, activePolicy, busy, onCreate, onUpdate, onRevoke
   onUpdate: (policy: GuardianPolicyRecord) => void;
   onRevoke: (policy: GuardianPolicyRecord) => void;
 }) {
-  return <><h1>Guardian Policy</h1><p className="page-sub">Connected-wallet Move policy objects. Limits are enforced by Sui, not by the interface.</p><div className="policy-stack">{!activePolicy && <button className="primary standalone" disabled={busy} onClick={onCreate}>Create default seven-day policy</button>}{policies.map((policy) => <div className="card" key={policy.objectId}><div className="card-header"><b>{short(policy.objectId)}</b><span className={`pill ${policy.revoked ? "block" : activePolicy?.objectId === policy.objectId ? "clear" : "warn"}`}>{policy.revoked ? "Revoked" : activePolicy?.objectId === policy.objectId ? "Active" : "Expired"}</span></div><div className="card-body"><div className="parsed-grid"><Field label="Max SUI input" value={`${policy.maxSuiInput} SUI`} /><Field label="Max DBUSDC input" value={`${policy.maxDbusdcInput} DBUSDC`} /><Field label="Max slippage" value={`${policy.maxSlippageBps} bps`} /><Field label="Expires" value={new Date(policy.expiresAtMs).toLocaleString()} /><Field label="Allowed pool" value={short(policy.allowedPool)} /><Field label="Owner" value={short(policy.owner)} /></div><div className="policy-actions"><a href={explorerObject(policy.objectId)} target="_blank" rel="noreferrer">View object ↗</a>{!policy.revoked && <><button disabled={busy} onClick={() => onUpdate(policy)}>Extend & update</button><button className="danger" disabled={busy} onClick={() => onRevoke(policy)}>Revoke</button></>}</div></div></div>)}</div></>;
+  return <><h1>Guardian Policy</h1><p className="page-sub">Connected-wallet Move policy objects. Limits are enforced by Sui, not by the interface.</p><div className="policy-stack">{!activePolicy && <button className="primary standalone" disabled={busy} onClick={onCreate}>Create default seven-day policy</button>}{policies.map((policy) => <div className="card" key={policy.objectId}><div className="card-header"><b>{short(policy.objectId)}</b><span className={`pill ${policy.revoked ? "block" : activePolicy?.objectId === policy.objectId ? "clear" : "warn"}`}>{policy.revoked ? "Revoked" : activePolicy?.objectId === policy.objectId ? "Active" : "Expired"}</span></div><div className="card-body"><div className="parsed-grid"><Field label="Max SUI input" value={`${policy.maxSuiInput} SUI`} /><Field label="Max DBUSDC input" value={`${policy.maxDbusdcInput} DBUSDC`} /><Field label="Max slippage" value={`${policy.maxSlippageBps} bps`} /><div className="parsed-field"><small>Expires</small><b>{new Date(policy.expiresAtMs).toLocaleString()}</b><PolicyExpiryCountdown expiresAtMs={policy.expiresAtMs} /></div><Field label="Allowed pool" value={short(policy.allowedPool)} /><Field label="Owner" value={short(policy.owner)} /></div><div className="policy-actions"><a href={explorerObject(policy.objectId)} target="_blank" rel="noreferrer">View object ↗</a>{!policy.revoked && <><button disabled={busy} onClick={() => onUpdate(policy)}>Extend & update</button><button className="danger" disabled={busy} onClick={() => onRevoke(policy)}>Revoke</button></>}</div></div></div>)}</div></>;
 }
 
 function AnalyticsPage({ receipts }: { receipts: ReceiptRecord[] }) {
@@ -130,6 +144,7 @@ export default function Dashboard() {
   const [plan, setPlan] = useState<ExecutionPlan | null>(null);
   const [simulation, setSimulation] = useState<Simulation | null>(null);
   const [stress, setStress] = useState(false);
+  const [stressScenario, setStressScenario] = useState<StressScenario>("block");
   const [ack, setAck] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -137,12 +152,19 @@ export default function Dashboard() {
   const [walletOpen, setWalletOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [clockNow, setClockNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (connectionStatus === "disconnected") router.replace("/");
   }, [connectionStatus, router]);
 
-  const executionGate = executionBlockReason(plan, chain.activePolicy);
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const executionGate = executionBlockReason(plan, chain.activePolicy, clockNow);
+  const planStale = Boolean(plan && !isPlanFresh(plan, clockNow));
   const canExecute = Boolean(plan && simulation?.success && guardian?.canExecute && !stress && !executionGate && (guardian.verdict !== "warn" || ack));
   const setupReady = chain.balances.sui > 0 && chain.balances.deep >= 0.05 && Boolean(chain.activePolicy);
   const activeNav = useMemo(() => nav.find(([id]) => id === page), [page]);
@@ -150,6 +172,13 @@ export default function Dashboard() {
   async function disconnectAndExit() {
     await disconnect.mutateAsync();
     router.replace("/");
+  }
+
+  function invalidateExecutionState() {
+    setGuardian(null);
+    setPlan(null);
+    setSimulation(null);
+    setAck(false);
   }
 
   async function signTransaction(title: string, detail: string, makeTransaction: () => ReturnType<typeof buildRevokePolicyTransaction>, after?: (digest: string) => void) {
@@ -164,6 +193,7 @@ export default function Dashboard() {
           const result = await signer.mutateAsync({ transaction: makeTransaction() });
           after?.(result.digest);
           chain.refresh();
+          invalidateExecutionState();
           setPendingAction(null);
         } catch (cause) {
           setError(cause instanceof Error ? cause.message : "Wallet transaction failed.");
@@ -224,7 +254,7 @@ export default function Dashboard() {
     void signTransaction("Revoke GuardianPolicy", "Permanently revoke this policy. The object remains visible on Sui Explorer.", () => buildRevokePolicyTransaction(policy.objectId));
   }
 
-  async function parseAndGuard() {
+  async function runGuardian(nextIntent: ParsedIntent) {
     if (!account) return;
     setBusy(true);
     setError("");
@@ -233,16 +263,13 @@ export default function Dashboard() {
     setPlan(null);
     setSimulation(null);
     try {
-      const parsedResponse = await fetch("/api/intent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
-      const parsed = await parsedResponse.json();
-      if (!parsedResponse.ok || parsed.error) throw new Error(parsed.error ?? "Intent parsing failed.");
-      setIntent(parsed.intent);
-      const guardianResponse = await fetch("/api/guardian", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ intent: parsed.intent, stress }) });
+      const guardianResponse = await fetch("/api/guardian", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ intent: nextIntent, stress, stressScenario }) });
       const checked: GuardianResult = await guardianResponse.json();
+      if (!guardianResponse.ok) throw new Error("Guardian analysis failed.");
       setGuardian(checked);
-      if (!chain.activePolicy) throw new Error("Create an active GuardianPolicy before generating an executable PTB.");
       if (!checked.canExecute || stress) return;
-      const nextPlan = createExecutionPlan(parsed.intent, checked, chain.activePolicy.objectId);
+      if (!chain.activePolicy) throw new Error("Create an active GuardianPolicy before generating an executable PTB.");
+      const nextPlan = createExecutionPlan(nextIntent, checked, chain.activePolicy.objectId);
       const nextSimulation = await simulateTransaction(buildIntentTransaction(account.address, nextPlan), account.address);
       setPlan(nextPlan);
       setSimulation(nextSimulation);
@@ -252,6 +279,32 @@ export default function Dashboard() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function parseAndGuard() {
+    if (!account) return;
+    setBusy(true);
+    setError("");
+    try {
+      const parsedResponse = await fetch("/api/intent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+      const parsed = await parsedResponse.json();
+      if (!parsedResponse.ok || parsed.error) throw new Error(parsed.error ?? "Intent parsing failed.");
+      setIntent(parsed.intent);
+      await runGuardian(parsed.intent);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to process intent.");
+      setBusy(false);
+    }
+  }
+
+  function rerunGuardian() {
+    if (!intent) return;
+    void runGuardian(intent);
+  }
+
+  function selectStressScenario(scenario: StressScenario) {
+    setStressScenario(scenario);
+    invalidateExecutionState();
   }
 
   function prepareExecution() {
@@ -268,7 +321,7 @@ export default function Dashboard() {
 
   return <div className="dashboard">
     <aside className="sidebar"><Logo /><div className="sidebar-section"><small>Main</small>{nav.slice(0, 3).map(([id, icon, label]) => <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><span>{icon}</span>{label}{id === "history" && chain.receipts.length > 0 && <em>{chain.receipts.length}</em>}</button>)}</div><div className="sidebar-section"><small>Manage</small>{nav.slice(3).map(([id, icon, label]) => <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><span>{icon}</span>{label}</button>)}</div><div className="sidebar-section resources"><small>Resources</small><a href="https://docs.sui.io/" target="_blank">📖 Sui Docs</a><a href="https://suiexplorer.com/?network=testnet" target="_blank">🔍 Explorer ↗</a></div><div className="wallet-card"><div><code>{short(account.address)}</code><span className="network">● testnet</span></div><div className="balance-line"><span>{chain.balances.sui.toFixed(3)} SUI</span><span>{chain.balances.deep.toFixed(3)} DEEP</span></div></div></aside>
-    <main className="dash-main"><header className="dash-top"><b>{activeNav?.[1]} {activeNav?.[2]}</b><div><button title="Deterministic adverse data for non-executable risk demonstrations." className={stress ? "stress active" : "stress"} onClick={() => setStress(!stress)}>🧪 Stress Mode {stress && <span>ACTIVE</span>}</button><div className="wallet-menu"><button className="wallet-trigger" onClick={() => setWalletOpen(!walletOpen)}><span className="wallet-dot" />{short(account.address)}⌄</button>{walletOpen && <div className="wallet-dropdown"><small>Connected wallet</small><code>{account.address}</code><button onClick={async () => { await navigator.clipboard.writeText(account.address); setCopied(true); }}>{copied ? "✓ Address copied" : "Copy address"}</button><div><span className="network">● testnet</span><a href={explorerObject(account.address)} target="_blank">Explorer ↗</a></div><button className="dropdown-disconnect" onClick={disconnectAndExit}>Disconnect wallet</button></div>}</div></div></header>{stress && <div className="stress-banner">🧪 <b>Stress mode active</b> — deterministic demonstration data. Signing and execution are disabled.</div>}
+    <main className="dash-main"><header className="dash-top"><b>{activeNav?.[1]} {activeNav?.[2]}</b><div><button title="Deterministic non-executable data for risk demonstrations." className={stress ? "stress active" : "stress"} onClick={() => { setStress(!stress); invalidateExecutionState(); }}>🧪 Stress Mode {stress && <span>ACTIVE</span>}</button><div className="wallet-menu"><button className="wallet-trigger" onClick={() => setWalletOpen(!walletOpen)}><span className="wallet-dot" />{short(account.address)}⌄</button>{walletOpen && <div className="wallet-dropdown"><small>Connected wallet</small><code>{account.address}</code><button onClick={async () => { await navigator.clipboard.writeText(account.address); setCopied(true); }}>{copied ? "✓ Address copied" : "Copy address"}</button><div><span className="network">● testnet</span><a href={explorerObject(account.address)} target="_blank">Explorer ↗</a></div><button className="dropdown-disconnect" onClick={disconnectAndExit}>Disconnect wallet</button></div>}</div></div></header>{stress && <div className="stress-banner"><span>🧪 <b>Stress mode active</b> — deterministic demonstration data. Signing and execution are disabled.</span><div className="stress-scenarios">{(["clear", "warn", "block"] as StressScenario[]).map((scenario) => <button key={scenario} className={stressScenario === scenario ? `active ${scenario}` : ""} onClick={() => selectStressScenario(scenario)}>{scenario}</button>)}</div></div>}
       <section className="page">
         {chain.error && <div className="error page-error">{chain.error}</div>}
         {error && <div className="error page-error">{error}</div>}
@@ -277,7 +330,7 @@ export default function Dashboard() {
         {page === "analytics" && <AnalyticsPage receipts={chain.receipts} />}
         {page === "policy" && <PolicyPage policies={chain.policies} activePolicy={chain.activePolicy} busy={busy || signer.isPending} onCreate={createPolicy} onUpdate={updatePolicy} onRevoke={revokePolicy} />}
         {page === "settings" && <SettingsPage configured={chain.configured} activePolicy={chain.activePolicy} />}
-        {page === "swap" && <><div className="intent-intro"><h1>New Intent</h1><p className="page-sub">Describe a financial goal. Aegis compiles, checks, simulates, and asks before signing.</p></div>{!setupReady && <SetupPanel balances={chain.balances} activePolicy={chain.activePolicy} busy={busy || signer.isPending} onFaucet={requestFaucet} onDeep={prepareDeepBootstrap} onPolicy={createPolicy} />}<div className={`swap-layout ${guardian ? "has-results" : "intent-only"}`}><div className="column"><div className="card"><div className="card-header"><b>Your Intent</b><small>SUI ↔ DBUSDC</small></div><div className="card-body"><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Swap 1 SUI to DBUSDC with max 1% slippage" /><div className="chips">{samples.map((sample) => <button key={sample} onClick={() => setText(sample)}>{sample}</button>)}</div><button className="primary" onClick={parseAndGuard} disabled={busy}>{busy ? "Running OpenAI + live Aegis checks..." : "Parse Intent & Run Aegis"}</button></div></div>{intent && <div className="card"><div className="card-header"><b>Parsed Intent</b><span className="pill clear">Validated</span></div><div className="card-body parsed-grid"><Field label="Input Asset" value={intent.inputAsset} /><Field label="Output Asset" value={intent.outputAsset} /><Field label="Amount" value={`${intent.amount} ${intent.inputAsset}`} /><Field label="Max Slippage" value={`${intent.maxSlippageBps / 100}%`} /><Field label="Risk Tolerance" value={intent.riskTolerance} /></div></div>}</div><div className="column">{guardian && <><div className="card"><div className="card-header"><b>Aegis Analysis</b><span className={`pill ${guardian.verdict}`}>{guardian.verdict.toUpperCase()} · {guardian.dataMode}</span></div><div className="card-body"><div className="score"><strong className={guardian.verdict}>{guardian.score}</strong><span><b>Deterministic risk score</b><small>0 clear · 40 warn · 70 block</small><i><em style={{ width: `${guardian.score}%` }} /></i></span></div><div className={`verdict ${guardian.verdict}`}>{guardian.verdict === "clear" ? "Safe to prepare" : guardian.verdict === "warn" ? "Risks detected; acknowledgement required" : "Execution blocked"}</div><RiskRows result={guardian} /><p className={`guardian-message ${guardian.verdict}`}>{guardian.explanation}</p></div></div>{plan && <div className="card"><div className="card-header"><b>Human-readable PTB Preview</b><small>fresh for 30 seconds</small></div><div className="card-body parsed-grid"><Field label="Policy" value={short(plan.policyId)} /><Field label="Pool" value={short(plan.poolId)} /><Field label="Expected output" value={`${guardian.expectedOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="Minimum output" value={`${plan.minOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="DEEP fee budget" value={plan.deepBudget.toFixed(6)} /><Field label="Snapshot" value={new Date(plan.createdAt).toLocaleTimeString()} /></div><div className="ptb">{[["Assert GuardianPolicy", "Move"], [`DeepBook swap ${plan.amount} ${plan.inputAsset}`, "DeepBook"], ["Mint IntentReceipt", "Move"]].map(([label, protocol], index) => <div key={label}><span>{index + 1}</span><b>{label}</b><em>{protocol}</em></div>)}</div><div className="atomic">Atomic: all three calls succeed together or the transaction reverts.</div><div className="confirm">{simulation && <div className={`verdict ${simulation.success ? "clear" : "block"}`}>{simulation.success ? `Dry run passed · gas ${simulation.gasEstimate}` : `Dry run failed · ${simulation.error}`}</div>}{executionGate && <div className="verdict block">{executionGate}</div>}{guardian.verdict === "warn" && <label><input type="checkbox" checked={ack} onChange={(event) => setAck(event.target.checked)} /> I understand the identified Aegis risks.</label>}<button className={canExecute ? "primary" : "disabled"} disabled={!canExecute || busy || signer.isPending} onClick={prepareExecution}>{canExecute ? "Review & Sign Atomic PTB" : "Execution gate not satisfied"}</button></div></div>}{digest && <div className="receipt"><b>Transaction executed and IntentReceipt minted</b><code>{digest}</code><a href={explorerTx(digest)} target="_blank" rel="noreferrer">View on Sui Explorer ↗</a></div>}</>}</div></div></>}
+        {page === "swap" && <><div className="intent-intro"><h1>New Intent</h1><p className="page-sub">Describe a financial goal. Aegis compiles, checks, simulates, and asks before signing.</p></div>{!setupReady && <SetupPanel balances={chain.balances} activePolicy={chain.activePolicy} busy={busy || signer.isPending} onFaucet={requestFaucet} onDeep={prepareDeepBootstrap} onPolicy={createPolicy} />}<div className={`swap-layout ${guardian ? "has-results" : "intent-only"}`}><div className="column"><div className="card"><div className="card-header"><b>Your Intent</b><small>SUI ↔ DBUSDC</small></div><div className="card-body"><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Swap 1 SUI to DBUSDC with max 1% slippage" /><div className="chips">{samples.map((sample) => <button key={sample} onClick={() => setText(sample)}>{sample}</button>)}</div><button className="primary" onClick={parseAndGuard} disabled={busy}>{busy ? "Running OpenAI + live Aegis checks..." : "Parse Intent & Run Aegis"}</button></div></div>{intent && <div className="card"><div className="card-header"><b>Parsed Intent</b><span className="pill clear">Validated</span></div><div className="card-body parsed-grid"><Field label="Input Asset" value={intent.inputAsset} /><Field label="Output Asset" value={intent.outputAsset} /><Field label="Amount" value={`${intent.amount} ${intent.inputAsset}`} /><Field label="Max Slippage" value={`${intent.maxSlippageBps / 100}%`} /><Field label="Risk Tolerance" value={intent.riskTolerance} /></div></div>}</div><div className="column">{guardian && <><div className="card"><div className="card-header"><b>Aegis Analysis</b><span className={`pill ${guardian.verdict}`}>{guardian.verdict.toUpperCase()} · {guardian.dataMode}</span></div><div className="card-body"><div className="score"><strong className={guardian.verdict}>{guardian.score}</strong><span><b>Deterministic risk score</b><small>0 clear · 40 warn · 70 block</small><i><em style={{ width: `${guardian.score}%` }} /></i></span></div><div className={`verdict ${guardian.verdict}`}>{guardian.verdict === "clear" ? "Safe to prepare" : guardian.verdict === "warn" ? "Risks detected; acknowledgement required" : "Execution blocked"}</div><RiskRows result={guardian} /><p className={`guardian-message ${guardian.verdict}`}>{guardian.explanation}</p></div></div>{plan && <div className="card"><div className="card-header"><b>Human-readable PTB Preview</b><small>fresh for 60 seconds</small></div><div className="card-body parsed-grid"><Field label="Policy" value={short(plan.policyId)} /><Field label="Pool" value={short(plan.poolId)} /><Field label="Expected output" value={`${guardian.expectedOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="Minimum output" value={`${plan.minOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="DEEP fee budget" value={plan.deepBudget.toFixed(6)} /><Field label="Snapshot" value={new Date(plan.createdAt).toLocaleTimeString()} /></div><div className="ptb">{[["Assert GuardianPolicy", "Move"], [`DeepBook swap ${plan.amount} ${plan.inputAsset}`, "DeepBook"], ["Mint IntentReceipt", "Move"]].map(([label, protocol], index) => <div key={label}><span>{index + 1}</span><b>{label}</b><em>{protocol}</em></div>)}</div><div className="atomic">Atomic: all three calls succeed together or the transaction reverts.</div><div className="confirm">{simulation && <div className={`verdict ${simulation.success ? "clear" : "block"}`}>{simulation.success ? `Dry run passed · gas ${simulation.gasEstimate}` : `Dry run failed · ${simulation.error}`}</div>}{executionGate && <div className="verdict block">{executionGate}</div>}{planStale && <button className="secondary-action" disabled={busy} onClick={rerunGuardian}>Re-run Guardian with live data</button>}{guardian.verdict === "warn" && <label><input type="checkbox" checked={ack} onChange={(event) => setAck(event.target.checked)} /> I understand the identified Aegis risks.</label>}<button className={canExecute ? "primary" : "disabled"} disabled={!canExecute || busy || signer.isPending} onClick={prepareExecution}>{canExecute ? "Review & Sign Atomic PTB" : "Execution gate not satisfied"}</button></div></div>}{digest && <div className="receipt"><b>Transaction executed and IntentReceipt minted</b><code>{digest}</code><a href={explorerTx(digest)} target="_blank" rel="noreferrer">View on Sui Explorer ↗</a></div>}</>}</div></div></>}
       </section>
     </main>
     {pendingAction && <div className="modal-backdrop"><div className="confirm-modal"><span className="logo-mark">A</span><h2>{pendingAction.title}</h2><p>{pendingAction.detail}</p><div><button onClick={() => setPendingAction(null)} disabled={busy || signer.isPending}>Cancel</button><button className="primary" onClick={pendingAction.run} disabled={busy || signer.isPending}>{busy || signer.isPending ? "Awaiting wallet..." : "Confirm in wallet"}</button></div></div></div>}

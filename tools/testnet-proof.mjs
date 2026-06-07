@@ -49,12 +49,11 @@ async function execute(signer, tx) {
 
 function bootstrapTransaction(minDeepOut) {
   const tx = new Transaction();
-  const [deepOut, suiOut, feeOut] = deepbook.deepBook.swapExactQuantity({
+  const [deepOut, suiOut, feeOut] = deepbook.deepBook.swapExactQuoteForBase({
     poolKey: "DEEP_SUI",
     amount: 0.3,
     deepAmount: 0,
     minOut: minDeepOut,
-    isBaseToCoin: false,
   })(tx);
   tx.transferObjects([deepOut, suiOut, feeOut], ADDRESS);
   return tx;
@@ -67,12 +66,11 @@ function executionTransaction(quote) {
     target: `${PACKAGE_ID}::guardian::assert_compliant`,
     arguments: [tx.object(POLICY_ID), tx.pure.u8(0), tx.pure.u64(1_000_000_000), tx.pure.u64(100), tx.pure.id(POOL_ID), tx.object(CLOCK_ID)],
   });
-  const [baseOut, quoteOut, deepOut] = deepbook.deepBook.swapExactQuantity({
+  const [baseOut, quoteOut, deepOut] = deepbook.deepBook.swapExactBaseForQuote({
     poolKey: "SUI_DBUSDC",
     amount: 1,
     deepAmount: Math.max(quote.deepRequired * 1.15, 0.001),
     minOut,
-    isBaseToCoin: true,
   })(tx);
   tx.transferObjects([baseOut, quoteOut, deepOut], ADDRESS);
   const receipt = tx.moveCall({

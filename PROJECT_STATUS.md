@@ -13,7 +13,7 @@
 - Owner-only policy update and persistent revocation
 - Atomic PTB: policy assertion -> DeepBook swap -> receipt mint
 - Real policy, event, receipt, balance, history, and analytics queries
-- Deterministic non-executable Stress Mode
+- Deterministic non-executable Stress Mode with clear, warn, and block scenarios
 - Published Sui testnet package and Explorer-verifiable end-to-end proof
 
 ## Verification

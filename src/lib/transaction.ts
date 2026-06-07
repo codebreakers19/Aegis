@@ -78,7 +78,7 @@ export function createExecutionPlan(intent: ParsedIntent, guardian: GuardianResu
 }
 
 export function isPlanFresh(plan: ExecutionPlan, now = Date.now()) {
-  return now - new Date(plan.createdAt).getTime() <= 30_000;
+  return now - new Date(plan.createdAt).getTime() <= 60_000;
 }
 
 export function executionBlockReason(plan: ExecutionPlan | null, policy: ExecutionPolicyStatus | null, now = Date.now()) {
@@ -118,13 +118,20 @@ export function buildIntentTransaction(address: string, plan: ExecutionPlan) {
     ],
   });
 
-  const [baseOut, quoteOut, deepOut] = deepbook.deepBook.swapExactQuantity({
-    poolKey: "SUI_DBUSDC",
-    amount: plan.amount,
-    deepAmount: plan.deepBudget,
-    minOut: plan.minOutput,
-    isBaseToCoin: plan.direction === 0,
-  })(tx);
+  const swap = plan.direction === 0
+    ? deepbook.deepBook.swapExactBaseForQuote({
+      poolKey: "SUI_DBUSDC",
+      amount: plan.amount,
+      deepAmount: plan.deepBudget,
+      minOut: plan.minOutput,
+    })(tx)
+    : deepbook.deepBook.swapExactQuoteForBase({
+      poolKey: "SUI_DBUSDC",
+      amount: plan.amount,
+      deepAmount: plan.deepBudget,
+      minOut: plan.minOutput,
+    })(tx);
+  const [baseOut, quoteOut, deepOut] = swap;
   tx.transferObjects([baseOut, quoteOut, deepOut], address);
 
   const receipt = tx.moveCall({
@@ -192,12 +199,11 @@ export function buildDeepBootstrapTransaction(address: string, suiAmount: number
   const client = new SuiJsonRpcClient({ network: "testnet", url: "https://fullnode.testnet.sui.io:443" });
   const deepbook = new DeepBookClient({ client, address, network: "testnet" });
   const tx = new Transaction();
-  const [deepOut, suiOut, feeOut] = deepbook.deepBook.swapExactQuantity({
+  const [deepOut, suiOut, feeOut] = deepbook.deepBook.swapExactQuoteForBase({
     poolKey: "DEEP_SUI",
     amount: suiAmount,
     deepAmount: 0,
     minOut: minDeepOut,
-    isBaseToCoin: false,
   })(tx);
   tx.transferObjects([deepOut, suiOut, feeOut], address);
   return tx;

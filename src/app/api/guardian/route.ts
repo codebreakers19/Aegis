@@ -1,23 +1,20 @@
 import { NextResponse } from "next/server";
-import { deepbook, type DeepBookClient } from "@mysten/deepbook-v3";
-import type { ClientWithExtensions } from "@mysten/sui/client";
-import { SuiGrpcClient } from "@mysten/sui/grpc";
+import { DeepBookClient } from "@mysten/deepbook-v3";
+import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
 import { intentSchema } from "@/lib/intent";
-import { fallbackSnapshot, type MarketSnapshot, scoreMarket, stressSnapshot } from "@/lib/guardian";
+import { fallbackSnapshot, type MarketSnapshot, scoreMarket, stressSnapshots, type StressScenario } from "@/lib/guardian";
 import OpenAI from "openai";
 
-const client = new SuiGrpcClient({
-  network: "testnet",
-  baseUrl: "https://fullnode.testnet.sui.io:443",
-}).$extend(deepbook({ address: "0x0" })) as ClientWithExtensions<{ deepbook: DeepBookClient }>;
+const client = new SuiJsonRpcClient({ network: "testnet", url: "https://fullnode.testnet.sui.io:443" });
+const deepbook = new DeepBookClient({ client, address: "0x0", network: "testnet" });
 
 async function fetchLiveSnapshot(amount: number, inputAsset: "SUI" | "DBUSDC"): Promise<{ snapshot: MarketSnapshot; deepRequired: number }> {
   const pool = "SUI_DBUSDC";
   const [midPrice, book, quote, freshnessSeconds] = await Promise.all([
-    client.deepbook.midPrice(pool),
-    client.deepbook.getLevel2TicksFromMid(pool, 50),
-    inputAsset === "SUI" ? client.deepbook.getQuoteQuantityOut(pool, amount) : client.deepbook.getBaseQuantityOut(pool, amount),
-    client.deepbook.getPriceInfoObjectAge("SUI").catch(() => 20),
+    deepbook.midPrice(pool),
+    deepbook.getLevel2TicksFromMid(pool, 50),
+    inputAsset === "SUI" ? deepbook.getQuoteQuantityOut(pool, amount) : deepbook.getBaseQuantityOut(pool, amount),
+    deepbook.getPriceInfoObjectAge("SUI").catch(() => 20),
   ]);
   const bestBid = book.bid_prices[0] ?? midPrice;
   const bestAsk = book.ask_prices[0] ?? midPrice;
@@ -42,7 +39,8 @@ export async function POST(request: Request) {
   const body = await request.json();
   const intent = intentSchema.parse(body.intent);
   const stress = body.stress === true;
-  if (stress) return NextResponse.json(scoreMarket(stressSnapshot, intent.maxSlippageBps, "stress"));
+  const stressScenario: StressScenario = ["clear", "warn", "block"].includes(body.stressScenario) ? body.stressScenario : "block";
+  if (stress) return NextResponse.json(scoreMarket(stressSnapshots[stressScenario], intent.maxSlippageBps, "stress"));
   try {
     const live = await fetchLiveSnapshot(intent.amount, intent.inputAsset);
     const result = scoreMarket(live.snapshot, intent.maxSlippageBps, "live", live.deepRequired);

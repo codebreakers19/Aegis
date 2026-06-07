@@ -29,6 +29,7 @@ describe("execution plans", () => {
     expect(executionBlockReason({ ...plan, dataMode: "fallback" }, policy, freshNow)).toContain("live");
     expect(executionBlockReason(plan, { ...policy, revoked: true }, freshNow)).toContain("revoked");
     expect(executionBlockReason({ ...plan, amount: 6 }, policy, freshNow)).toContain("ceiling");
-    expect(executionBlockReason(plan, policy, Date.parse("2026-06-07T00:01:00.000Z"))).toContain("stale");
+    expect(executionBlockReason(plan, policy, Date.parse("2026-06-07T00:01:00.000Z"))).toBeNull();
+    expect(executionBlockReason(plan, policy, Date.parse("2026-06-07T00:01:01.000Z"))).toContain("stale");
   });
 });

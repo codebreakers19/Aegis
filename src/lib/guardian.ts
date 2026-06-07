@@ -1,4 +1,5 @@
 export type Verdict = "clear" | "warn" | "block";
+export type StressScenario = "clear" | "warn" | "block";
 
 export interface RiskFinding {
   id: "impact" | "depth" | "spread" | "freshness";
@@ -72,4 +73,11 @@ export function fallbackSnapshot(amount: number, direction: "SUI" | "DBUSDC"): M
   return { midPrice: mid, expectedOutput: direction === "SUI" ? amount * mid * (1 - impactBps / 10_000) : (amount / mid) * (1 - impactBps / 10_000), spreadBps: 5.4, depthCoverage: Math.max(0.35, 1.2 - suiAmount / 8000), priceImpactBps: impactBps, freshnessSeconds: 18 };
 }
 
-export const stressSnapshot: MarketSnapshot = { midPrice: 3.42, expectedOutput: 2.67, spreadBps: 38, depthCoverage: 0.31, priceImpactBps: 420, freshnessSeconds: 490 };
+export const stressClearSnapshot: MarketSnapshot = { midPrice: 3.42, expectedOutput: 3.414, spreadBps: 2, depthCoverage: 1.8, priceImpactBps: 8, freshnessSeconds: 12 };
+export const stressWarnSnapshot: MarketSnapshot = { midPrice: 3.42, expectedOutput: 3.35, spreadBps: 14, depthCoverage: 0.62, priceImpactBps: 82, freshnessSeconds: 130 };
+export const stressBlockSnapshot: MarketSnapshot = { midPrice: 3.42, expectedOutput: 2.67, spreadBps: 38, depthCoverage: 0.31, priceImpactBps: 420, freshnessSeconds: 490 };
+export const stressSnapshots: Record<StressScenario, MarketSnapshot> = {
+  clear: stressClearSnapshot,
+  warn: stressWarnSnapshot,
+  block: stressBlockSnapshot,
+};

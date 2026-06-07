@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { scoreMarket, stressSnapshot } from "./guardian";
+import { scoreMarket, stressSnapshots } from "./guardian";
 
 describe("scoreMarket", () => {
-  it("blocks adverse stress data and makes it non-executable", () => {
-    const result = scoreMarket(stressSnapshot, 100, "stress");
-    expect(result.verdict).toBe("block");
+  it.each(["clear", "warn", "block"] as const)("renders a non-executable %s stress scenario", (scenario) => {
+    const result = scoreMarket(stressSnapshots[scenario], 100, "stress");
+    expect(result.verdict).toBe(scenario);
     expect(result.canExecute).toBe(false);
     expect(result.findings).toHaveLength(4);
   });

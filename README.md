@@ -245,7 +245,7 @@ Execution is blocked unless all gates pass:
 flowchart LR
     A["Active matching policy"]:::pass --> B["Live DeepBook data"]:::pass
     B --> C["Verdict is not block"]:::pass
-    C --> D["Plan age <= 30 seconds"]:::pass
+    C --> D["Plan age <= 60 seconds"]:::pass
     D --> E["Policy ceilings pass"]:::pass
     E --> F["Dry run succeeds"]:::pass
     F --> G["User confirms"]:::confirm
@@ -533,7 +533,7 @@ http://localhost:3000
 
 ### 5. Block and Stress Flow
 
-1. Enable **Stress Mode**.
+1. Enable **Stress Mode** and select the clear, warn, or block scenario.
 2. Run an intent.
 3. Confirm deterministic adverse risk data is shown.
 4. Confirm signing is disabled.
@@ -687,7 +687,7 @@ intent-guardian/
 - Deterministic risk verdict
 - Stress/fallback execution block
 - Typed preview and PTB consistency
-- Plan freshness of 30 seconds
+- Plan freshness of 60 seconds with a Guardian-only live requote action
 - Successful exact PTB dry run
 - Explicit user confirmation
 - Additional warning acknowledgement
