@@ -1,0 +1,39 @@
+{
+  "network": "testnet",
+  "publisher": "0xb9e2805d6531802348e36954ad113ba4f2bce2c14e09fd578e5c8fa876082232",
+  "packageId": "0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d",
+  "upgradeCapId": "0x6dc878e6c89761c36d14205ebbf345bbb01a609f702c633bbd68dbb4cb389350",
+  "publishDigest": "78urbD7QrRsrCES6FctQbrg5z2cKm5She1kSeSbrExWL",
+  "publishedAt": "2026-06-07T11:40:54.225Z",
+  "deepBookPools": {
+    "SUI_DBUSDC": "0x1c19362ca52b8ffd7a33cee805a67d40f31e6ba303753fd3a4cfdfacea7163a5"
+  },
+  "explorer": {
+    "package": "https://suiexplorer.com/object/0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d?network=testnet",
+    "publishTransaction": "https://suiexplorer.com/txblock/78urbD7QrRsrCES6FctQbrg5z2cKm5She1kSeSbrExWL?network=testnet",
+    "policy": "https://suiexplorer.com/object/0x85cc37e385369cb39f63cdbe04b5ad6bed8d1ae727ddd091009760dc9b50c560?network=testnet",
+    "executionTransaction": "https://suiexplorer.com/txblock/BAgizt4dbnW3untoXgnkD5ReCyUmJBCDDvJp15VpkoT4?network=testnet",
+    "receipt": "https://suiexplorer.com/object/0x0c20dfb27bab5ea1c52ad17b89c5274eb07f8c9727aa9af673329aa8377abbf8?network=testnet",
+    "revocationTransaction": "https://suiexplorer.com/txblock/FKxRbWg8wc6Gak5rKzEcwwgn9aRrdFtdHg7dpHTiwFXh?network=testnet"
+  },
+  "proof": {
+    "policyId": "0x85cc37e385369cb39f63cdbe04b5ad6bed8d1ae727ddd091009760dc9b50c560",
+    "policyCreateDigest": "8cFHyXkBPFUFxU6tqizBixr3j2fVyykW65nBkjvgwF8k",
+    "deepBootstrapDigest": "Hyk2TzsZH5WPUbmzHduH1k8j2pjC185HcvedhSRqrEQF",
+    "executionDigest": "BAgizt4dbnW3untoXgnkD5ReCyUmJBCDDvJp15VpkoT4",
+    "receiptId": "0x0c20dfb27bab5ea1c52ad17b89c5274eb07f8c9727aa9af673329aa8377abbf8",
+    "policyUpdateDigest": "4AUWULANH8aC2PakY6XjdwPpKQqAAdCyGoaksFDFX7aG",
+    "policyRevokeDigest": "FKxRbWg8wc6Gak5rKzEcwwgn9aRrdFtdHg7dpHTiwFXh",
+    "quote": {
+      "input": "1 SUI",
+      "output": "0.749 DBUSDC",
+      "deepRequired": 0.023111
+    },
+    "result": {
+      "policyRevoked": true,
+      "receiptGuardianScore": 12,
+      "receiptVerdict": "clear",
+      "receivedDbusdc": 0.749
+    }
+  }
+}
