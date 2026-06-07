@@ -10,6 +10,7 @@ export const DEEP_SUI_POOL_ID = testnetPools.DEEP_SUI.address;
 export const SUI_TYPE = "0x2::sui::SUI";
 export const DEEP_TYPE = "0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP";
 export const DBUSDC_TYPE = "0xf7152c05930480cd740d7311b5b8b45c6f488e3a53a11c3f74a6fac36a52e0d7::DBUSDC::DBUSDC";
+export const AEGIS_GAS_BUDGET = 50_000_000;
 
 export interface ExecutionPlan {
   policyId: string;
@@ -149,6 +150,7 @@ export function buildIntentTransaction(address: string, plan: ExecutionPlan) {
     ],
   });
   tx.transferObjects([receipt], address);
+  tx.setGasBudget(AEGIS_GAS_BUDGET);
   return tx;
 }
 
@@ -206,6 +208,7 @@ export function buildDeepBootstrapTransaction(address: string, suiAmount: number
     minOut: minDeepOut,
   })(tx);
   tx.transferObjects([deepOut, suiOut, feeOut], address);
+  tx.setGasBudget(AEGIS_GAS_BUDGET);
   return tx;
 }
 
