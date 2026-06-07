@@ -228,6 +228,11 @@ export default function Dashboard() {
       const quoteResponse = await fetch("/api/deep-bootstrap", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ address: account.address, suiAmount: 0.3 }) });
       const quote = await quoteResponse.json();
       if (!quoteResponse.ok) throw new Error(quote.error ?? "Unable to quote DEEP bootstrap.");
+      if (quote.alreadyReady) {
+        chain.refresh();
+        setError("");
+        return;
+      }
       const tx = buildDeepBootstrapTransaction(account.address, quote.suiAmount, quote.minDeepOut);
       const dryRun = await simulateTransaction(tx, account.address);
       if (!dryRun.success) throw new Error(dryRun.error ?? "DEEP bootstrap dry run failed.");
