@@ -622,7 +622,7 @@ It performs:
 | --- | --- |
 | `POST /api/intent` | Parse and validate a plain-English intent |
 | `POST /api/guardian` | Read live DeepBook data, calculate deterministic risks, and explain results |
-| `POST /api/deep-bootstrap` | Quote visible DEEP/SUI asks for onboarding |
+| `POST /api/deep-bootstrap` | Get an executable fee-free DEEP/SUI SDK quote for onboarding |
 | `POST /api/faucet` | Request Sui testnet faucet funds |
 
 ---
