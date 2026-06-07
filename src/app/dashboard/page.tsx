@@ -45,8 +45,15 @@ const nav: Array<[Page, string, string]> = [
 ];
 
 const short = (value: string) => value ? `${value.slice(0, 8)}...${value.slice(-6)}` : "—";
-const explorerObject = (id: string) => `https://suiexplorer.com/object/${id}?network=testnet`;
-const explorerTx = (digest: string) => `https://suiexplorer.com/txblock/${digest}?network=testnet`;
+const explorerObject = (id: string) => `https://suiscan.xyz/testnet/object/${id}`;
+const explorerTx = (digest: string) => `https://suiscan.xyz/testnet/tx/${digest}`;
+const receiptAssets = (receipt: ReceiptRecord) => receipt.direction === 0
+  ? { input: "SUI", output: "DBUSDC", inputScalar: 1e9, outputScalar: 1e6 }
+  : { input: "DBUSDC", output: "SUI", inputScalar: 1e6, outputScalar: 1e9 };
+const formatAmount = (atomic: string, scalar: number, symbol: string) => {
+  const amount = Number(atomic) / scalar;
+  return `${amount.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${symbol}`;
+};
 const defaultPolicy = (): PolicyInput => ({
   maxSuiInput: 5,
   maxDbusdcInput: 10,
@@ -114,10 +121,35 @@ function SetupPanel({ balances, activePolicy, busy, onFaucet, onDeep, onPolicy }
 
 function ReceiptTable({ receipts, mode }: { receipts: ReceiptRecord[]; mode: "history" | "receipts" }) {
   if (!receipts.length) return <div className="card"><div className="card-body">No Explorer-verifiable Aegis executions were found for this wallet.</div></div>;
-  return <div className="history-table"><div className="table-row table-head"><span>{mode === "history" ? "Transaction" : "Receipt"}</span><span>Direction</span><span>Input atomic</span><span>Score</span><span>Verdict</span><span>Time</span></div>{receipts.map((receipt) => <a className="table-row" href={mode === "history" ? explorerTx(receipt.digest) : explorerObject(receipt.receiptId)} target="_blank" rel="noreferrer" key={receipt.digest}><span><b>{mode === "history" ? short(receipt.digest) : short(receipt.receiptId)}</b><small>{short(receipt.policyId)}</small></span><code>{receipt.direction === 0 ? "SUI → DBUSDC" : "DBUSDC → SUI"}</code><code>{receipt.inputAmount}</code><span className={`pill ${receipt.guardianScore >= 70 ? "block" : receipt.guardianScore >= 40 ? "warn" : "clear"}`}>{receipt.guardianScore}</span><span className={`pill ${receipt.verdict || "clear"}`}>{receipt.verdict || "clear"}</span><code>{new Date(receipt.timestamp).toLocaleString()}</code></a>)}</div>;
+  return <div className="proof-list">{receipts.map((receipt, index) => {
+    const assets = receiptAssets(receipt);
+    const verdict = receipt.verdict || "clear";
+    return <article className="proof-card" key={`${receipt.digest}-${receipt.receiptId}`}>
+      <div className="proof-card-top">
+        <span className="proof-index">{String(receipts.length - index).padStart(2, "0")}</span>
+        <div><small>{mode === "history" ? "Atomic Aegis execution" : "Owned IntentReceipt"}</small><h2>{assets.input} <span>→</span> {assets.output}</h2></div>
+        <span className={`pill ${verdict}`}>{verdict.toUpperCase()} · {receipt.guardianScore}/100</span>
+      </div>
+      <div className="proof-amounts">
+        <div><small>Input amount</small><strong>{formatAmount(receipt.inputAmount, assets.inputScalar, assets.input)}</strong><code>{receipt.inputAmount} atomic units</code></div>
+        <div><small>Protected minimum output</small><strong>{formatAmount(receipt.minOutput, assets.outputScalar, assets.output)}</strong><code>{receipt.minOutput} atomic units</code></div>
+        <div><small>Executed on testnet</small><strong>{new Date(receipt.timestamp).toLocaleDateString()}</strong><code>{new Date(receipt.timestamp).toLocaleTimeString()}</code></div>
+      </div>
+      <div className="proof-hash">
+        <span><small>Transaction digest</small><code>{receipt.digest}</code></span>
+        <a className="proof-primary-link" href={explorerTx(receipt.digest)} target="_blank" rel="noreferrer">Verify transaction on SuiScan ↗</a>
+      </div>
+      <div className="proof-links">
+        <span>On-chain proof</span>
+        <a href={explorerObject(receipt.receiptId)} target="_blank" rel="noreferrer">IntentReceipt {short(receipt.receiptId)} ↗</a>
+        <a href={explorerObject(receipt.policyId)} target="_blank" rel="noreferrer">GuardianPolicy {short(receipt.policyId)} ↗</a>
+        <a href={explorerObject(receipt.pool)} target="_blank" rel="noreferrer">DeepBook pool {short(receipt.pool)} ↗</a>
+      </div>
+    </article>;
+  })}</div>;
 }
 
-function PolicyPage({ policies, activePolicy, busy, onCreate, onUpdate, onRevoke }: {
+function PolicyPageLegacy({ policies, activePolicy, busy, onCreate, onUpdate, onRevoke }: {
   policies: GuardianPolicyRecord[];
   activePolicy: GuardianPolicyRecord | null;
   busy: boolean;
@@ -128,23 +160,104 @@ function PolicyPage({ policies, activePolicy, busy, onCreate, onUpdate, onRevoke
   return <><h1>Guardian Policy</h1><p className="page-sub">Connected-wallet Move policy objects. Limits are enforced by Sui, not by the interface.</p><div className="policy-stack">{!activePolicy && <button className="primary standalone" disabled={busy} onClick={onCreate}>Create default seven-day policy</button>}{policies.map((policy) => <div className="card" key={policy.objectId}><div className="card-header"><b>{short(policy.objectId)}</b><span className={`pill ${policy.revoked ? "block" : activePolicy?.objectId === policy.objectId ? "clear" : "warn"}`}>{policy.revoked ? "Revoked" : activePolicy?.objectId === policy.objectId ? "Active" : "Expired"}</span></div><div className="card-body"><div className="parsed-grid"><Field label="Max SUI input" value={`${policy.maxSuiInput} SUI`} /><Field label="Max DBUSDC input" value={`${policy.maxDbusdcInput} DBUSDC`} /><Field label="Max slippage" value={`${policy.maxSlippageBps} bps`} /><div className="parsed-field"><small>Expires</small><b>{new Date(policy.expiresAtMs).toLocaleString()}</b><PolicyExpiryCountdown expiresAtMs={policy.expiresAtMs} /></div><Field label="Allowed pool" value={short(policy.allowedPool)} /><Field label="Owner" value={short(policy.owner)} /></div><div className="policy-actions"><a href={explorerObject(policy.objectId)} target="_blank" rel="noreferrer">View object ↗</a>{!policy.revoked && <><button disabled={busy} onClick={() => onUpdate(policy)}>Extend & update</button><button className="danger" disabled={busy} onClick={() => onRevoke(policy)}>Revoke</button></>}</div></div></div>)}</div></>;
 }
 
+void PolicyPageLegacy;
+
+function ProofExplainer() {
+  return <div className="proof-explainer">
+    <div><small>History</small><b>Transaction/event timeline</b><p>Shows each IntentExecuted event and the transaction digest judges can verify on SuiScan.</p></div>
+    <div><small>IntentReceipt</small><b>Owned on-chain proof object</b><p>Shows the receipt object minted by the same PTB. It is portable proof of the guarded swap.</p></div>
+  </div>;
+}
+
+function PolicyPage({ policies, activePolicy, busy, onCreate, onUpdate, onRevoke }: {
+  policies: GuardianPolicyRecord[];
+  activePolicy: GuardianPolicyRecord | null;
+  busy: boolean;
+  onCreate: () => void;
+  onUpdate: (policy: GuardianPolicyRecord) => void;
+  onRevoke: (policy: GuardianPolicyRecord) => void;
+}) {
+  const activeStatus = activePolicy ? "Active safety contract" : policies.length ? "No active policy" : "Policy not created";
+  return <><div className="page-heading"><span>{activeStatus}</span><h1>Guardian Policy</h1><p className="page-sub">Your Move safety contract. Aegis must pass this object before any DeepBook swap can execute.</p></div>
+    <div className={`policy-hero ${activePolicy ? "ready" : "blocked"}`}>
+      <div><small>Policy enforcement</small><strong>{activePolicy ? "On-chain guard is active" : "Create a policy to unlock execution"}</strong><p>{activePolicy ? "Every PTB asserts owner, pool, direction, amount ceiling, slippage, expiry, and revocation state before swapping." : "Without an active GuardianPolicy, Aegis can parse and analyze but cannot execute a real swap."}</p></div>
+      <button className="primary" disabled={busy} onClick={onCreate}>{activePolicy ? "Create another policy" : "Create default 7-day policy"}</button>
+    </div>
+    <div className="policy-summary-grid">
+      <div><small>Active policy</small><b>{activePolicy ? short(activePolicy.objectId) : "None"}</b></div>
+      <div><small>SUI ceiling</small><b>{activePolicy ? `${activePolicy.maxSuiInput} SUI` : "—"}</b></div>
+      <div><small>DBUSDC ceiling</small><b>{activePolicy ? `${activePolicy.maxDbusdcInput} DBUSDC` : "—"}</b></div>
+      <div><small>Max slippage</small><b>{activePolicy ? `${activePolicy.maxSlippageBps / 100}%` : "—"}</b></div>
+    </div>
+    <div className="policy-stack polished">{policies.length === 0 && <div className="card empty-policy"><div className="card-body"><b>No GuardianPolicy objects found.</b><p>Create one to make the hackathon flow executable on Sui testnet.</p></div></div>}{policies.map((policy) => {
+      const status = policy.revoked ? "Revoked" : activePolicy?.objectId === policy.objectId ? "Active" : "Expired";
+      return <article className="policy-card" key={policy.objectId}>
+        <div className="policy-card-head">
+          <span className="logo-mark">A</span>
+          <div><small>GuardianPolicy object</small><h2>{short(policy.objectId)}</h2><code>{policy.objectId}</code></div>
+          <span className={`pill ${policy.revoked ? "block" : activePolicy?.objectId === policy.objectId ? "clear" : "warn"}`}>{status}</span>
+        </div>
+        <div className="policy-rule-grid">
+          <Field label="Owner" value={short(policy.owner)} />
+          <Field label="Allowed pool" value={short(policy.allowedPool)} />
+          <Field label="Max SUI input" value={`${policy.maxSuiInput} SUI`} />
+          <Field label="Max DBUSDC input" value={`${policy.maxDbusdcInput} DBUSDC`} />
+          <Field label="Max slippage" value={`${policy.maxSlippageBps} bps (${policy.maxSlippageBps / 100}%)`} />
+          <div className="parsed-field"><small>Expiration</small><b>{new Date(policy.expiresAtMs).toLocaleString()}</b><PolicyExpiryCountdown expiresAtMs={policy.expiresAtMs} /></div>
+        </div>
+        <div className="policy-checklist">
+          {["Owner must match connected wallet", "Pool must be SUI / DBUSDC", "Amount must stay under policy ceiling", "Revoked or expired policy blocks execution"].map((item) => <span key={item}>✓ {item}</span>)}
+        </div>
+        <div className="policy-actions">
+          <a href={explorerObject(policy.objectId)} target="_blank" rel="noreferrer">Inspect policy on SuiScan ↗</a>
+          <a href={explorerObject(policy.allowedPool)} target="_blank" rel="noreferrer">View allowed pool ↗</a>
+          {!policy.revoked && <><button disabled={busy} onClick={() => onUpdate(policy)}>Extend & update policy</button><button className="danger" disabled={busy} onClick={() => onRevoke(policy)}>Revoke policy</button></>}
+        </div>
+      </article>;
+    })}</div></>;
+}
+
 function AnalyticsPage({ receipts }: { receipts: ReceiptRecord[] }) {
   const average = receipts.length ? receipts.reduce((sum, row) => sum + row.guardianScore, 0) / receipts.length : 0;
   const suiVolume = receipts.filter((row) => row.direction === 0).reduce((sum, row) => sum + Number(row.inputAmount) / 1e9, 0);
   const dbusdcVolume = receipts.filter((row) => row.direction === 1).reduce((sum, row) => sum + Number(row.inputAmount) / 1e6, 0);
-  return <><h1>Analytics</h1><p className="page-sub">Derived only from this wallet&apos;s real IntentExecuted events.</p><div className="metrics">{[["Total swaps", String(receipts.length)], ["Average risk", average.toFixed(1)], ["SUI volume", suiVolume.toFixed(3)], ["DBUSDC volume", dbusdcVolume.toFixed(3)]].map(([label, value]) => <div className="metric" key={label}><small>{label}</small><strong>{value}</strong><em>testnet events</em></div>)}</div><div className="card chart"><div className="card-header"><b>Guardian Score History</b></div><div className="bars">{receipts.length ? receipts.slice().reverse().map((row) => <i key={row.digest} title={`${row.guardianScore}/100`} style={{ height: `${Math.max(8, row.guardianScore * 2)}px` }} className={row.guardianScore >= 70 ? "red" : row.guardianScore >= 40 ? "amber" : "green"} />) : <p>No execution scores yet.</p>}</div></div></>;
+  const verdicts = {
+    clear: receipts.filter((row) => (row.verdict || "clear") === "clear").length,
+    warn: receipts.filter((row) => row.verdict === "warn").length,
+    block: receipts.filter((row) => row.verdict === "block").length,
+  };
+  const latest = receipts[0];
+  return <><div className="page-heading"><span>Real testnet telemetry</span><h1>Analytics</h1><p className="page-sub">Every number below is derived from this wallet&apos;s on-chain IntentExecuted events.</p></div><div className="metrics analytics-metrics">{[
+    ["Total executions", String(receipts.length), "IntentExecuted events"],
+    ["Average risk", average.toFixed(1), "deterministic score / 100"],
+    ["SUI protected", `${suiVolume.toFixed(3)} SUI`, "real input volume"],
+    ["DBUSDC protected", `${dbusdcVolume.toFixed(3)} DBUSDC`, "real input volume"],
+  ].map(([label, value, detail]) => <div className="metric" key={label}><small>{label}</small><strong>{value}</strong><em>{detail}</em></div>)}</div>
+    <div className="analytics-grid">
+      <div className="card chart"><div className="card-header"><b>Guardian score history</b><small>Chronological · score / 100</small></div><div className="score-chart">{receipts.length ? receipts.slice().reverse().map((row, index) => <div className="score-column" key={row.digest}><span>{row.guardianScore}</span><i style={{ height: `${Math.max(12, row.guardianScore * 1.65)}px` }} className={row.guardianScore >= 70 ? "red" : row.guardianScore >= 40 ? "amber" : "green"} /><small>#{index + 1}</small></div>) : <p>No execution scores yet.</p>}</div><div className="chart-legend"><span><i className="green" />Clear 0–39</span><span><i className="amber" />Warn 40–69</span><span><i className="red" />Block 70+</span></div></div>
+      <div className="card verdict-card"><div className="card-header"><b>Verdict distribution</b><small>Executed intents</small></div><div className="verdict-stats">{(["clear", "warn", "block"] as const).map((verdict) => <div key={verdict}><span className={`verdict-dot ${verdict}`} /><span><b>{verdicts[verdict]}</b><small>{verdict}</small></span><em>{receipts.length ? Math.round((verdicts[verdict] / receipts.length) * 100) : 0}%</em></div>)}</div></div>
+    </div>
+    {latest && <div className="latest-proof"><span><small>Latest verified execution</small><code>{latest.digest}</code></span><a href={explorerTx(latest.digest)} target="_blank" rel="noreferrer">Open on SuiScan ↗</a></div>}
+  </>;
 }
 
-function SettingsPage({ configured, activePolicy }: { configured: boolean; activePolicy: GuardianPolicyRecord | null }) {
+function SettingsPage({ configured, activePolicy, address, balances, receiptCount }: { configured: boolean; activePolicy: GuardianPolicyRecord | null; address: string; balances: { sui: number; deep: number; dbusdc: number }; receiptCount: number }) {
   const rows = [
-    ["Network", "Sui testnet", true],
-    ["Aegis package", executionConfig()?.packageId ?? "Not published/configured", configured],
-    ["DeepBook pool", SUI_DBUSDC_POOL_ID, true],
-    ["OpenAI model", "gpt-4o-mini (server-side)", true],
-    ["Active policy", activePolicy?.objectId ?? "Not created", Boolean(activePolicy)],
-    ["Execution rules", "Live data + fresh plan + successful dry run", true],
+    ["Network", "Sui testnet", "Transactions sign with the connected testnet wallet.", true],
+    ["Aegis Move package", executionConfig()?.packageId ?? "Not published/configured", "Policy assertion and receipt mint targets.", configured],
+    ["DeepBook market", SUI_DBUSDC_POOL_ID, "Allowed SUI / DBUSDC execution pool.", true],
+    ["OpenAI parser", "gpt-4o-mini · server-side", "Parses intent and explains immutable risk results.", true],
+    ["GuardianPolicy", activePolicy?.objectId ?? "Not created", "On-chain limits enforced before every swap.", Boolean(activePolicy)],
+    ["Execution gate", "Live quote · risk check · dry run · explicit confirmation", "All gates must pass before wallet signing.", true],
   ] as const;
-  return <><h1>Settings & Readiness</h1><p className="page-sub">Real deployment and execution status. No cosmetic controls.</p><div className="settings-status">{rows.map(([label, value, ready]) => <div className="card" key={label}><div className="card-body"><small>{label}</small><code>{value}</code><span className={`pill ${ready ? "clear" : "block"}`}>{ready ? "Ready" : "Blocked"}</span></div></div>)}</div></>;
+  const readyCount = rows.filter((row) => row[3]).length;
+  return <><div className="page-heading"><span>Deployment controls</span><h1>Settings & Readiness</h1><p className="page-sub">Inspectable configuration for the real Aegis testnet execution path.</p></div><div className={`readiness-banner ${readyCount === rows.length ? "ready" : "blocked"}`}><div><small>Execution readiness</small><strong>{readyCount}/{rows.length} systems ready</strong><span>{readyCount === rows.length ? "Aegis is ready to build and simulate guarded PTBs." : "Complete the blocked requirement before executing."}</span></div><span className={`pill ${readyCount === rows.length ? "clear" : "block"}`}>{readyCount === rows.length ? "READY" : "ACTION NEEDED"}</span></div>
+    <div className="section-title"><span>01</span><div><b>Wallet state</b><small>Balances and proof count for the connected account.</small></div></div>
+    <div className="settings-overview"><div className="card wallet-readiness"><div className="card-header"><b>Connected wallet</b><span className="pill clear">testnet</span></div><div className="card-body"><code>{address}</code><div className="balance-grid"><span><small>SUI balance</small><b>{balances.sui.toFixed(6)} SUI</b></span><span><small>DEEP fees</small><b>{balances.deep.toFixed(6)} DEEP</b></span><span><small>DBUSDC balance</small><b>{balances.dbusdc.toFixed(6)} DBUSDC</b></span><span><small>Verified receipts</small><b>{receiptCount}</b></span></div><a className="proof-primary-link" href={explorerObject(address)} target="_blank" rel="noreferrer">Inspect wallet on SuiScan ↗</a></div></div>
+      <div className="card safety-gates"><div className="card-header"><b>Required execution gates</b><small>Enforced every time</small></div><div className="card-body">{["Connected testnet wallet", "Active non-revoked GuardianPolicy", "Live DeepBook market snapshot", "Deterministic Guardian verdict", "Successful PTB dry run", "Explicit user confirmation"].map((gate, index) => <div key={gate}><span>{index + 1}</span><b>{gate}</b><em>Required</em></div>)}</div></div>
+    </div>
+    <div className="section-title"><span>02</span><div><b>System configuration</b><small>Runtime targets that make this a real Sui testnet product.</small></div></div>
+    <div className="settings-status">{rows.map(([label, value, detail, ready]) => <div className="card setting-status-card" key={label}><div className="card-body"><div><small>{label}</small><span className={`pill ${ready ? "clear" : "block"}`}>{ready ? "Ready" : "Blocked"}</span></div><code>{value}</code><p>{detail}</p>{label === "Aegis Move package" && configured && <a href={explorerObject(value)} target="_blank" rel="noreferrer">Inspect package ↗</a>}{label === "GuardianPolicy" && activePolicy && <a href={explorerObject(activePolicy.objectId)} target="_blank" rel="noreferrer">Inspect policy ↗</a>}{label === "DeepBook market" && <a href={explorerObject(SUI_DBUSDC_POOL_ID)} target="_blank" rel="noreferrer">Inspect pool ↗</a>}</div></div>)}</div></>;
 }
 
 export default function Dashboard() {
@@ -348,12 +461,12 @@ export default function Dashboard() {
       <section className="page">
         {chain.error && <div className="error page-error">{chain.error}</div>}
         {error && <div className="error page-error">{error}</div>}
-        {page === "history" && <><h1>Transaction History</h1><p className="page-sub">Real IntentExecuted events for the connected wallet.</p><ReceiptTable receipts={chain.receipts} mode="history" /></>}
-        {page === "receipts" && <><h1>My IntentReceipts</h1><p className="page-sub">Owned receipt objects minted by successful atomic Aegis PTBs.</p><ReceiptTable receipts={chain.receipts} mode="receipts" /></>}
+        {page === "history" && <><div className="page-heading"><span>{chain.receipts.length} verified execution{chain.receipts.length === 1 ? "" : "s"}</span><h1>Transaction History</h1><p className="page-sub">Explorer-verifiable IntentExecuted events with readable amounts and complete on-chain proof.</p></div><ProofExplainer /><ReceiptTable receipts={chain.receipts} mode="history" /></>}
+        {page === "receipts" && <><div className="page-heading"><span>{chain.receipts.length} owned receipt{chain.receipts.length === 1 ? "" : "s"}</span><h1>My IntentReceipts</h1><p className="page-sub">On-chain audit objects minted by successful atomic Aegis PTBs.</p></div><ProofExplainer /><ReceiptTable receipts={chain.receipts} mode="receipts" /></>}
         {page === "analytics" && <AnalyticsPage receipts={chain.receipts} />}
         {page === "policy" && <PolicyPage policies={chain.policies} activePolicy={chain.activePolicy} busy={busy || signer.isPending} onCreate={createPolicy} onUpdate={updatePolicy} onRevoke={revokePolicy} />}
-        {page === "settings" && <SettingsPage configured={chain.configured} activePolicy={chain.activePolicy} />}
-        {page === "swap" && <><div className="intent-intro"><h1>New Intent</h1><p className="page-sub">Describe a financial goal. Aegis compiles, checks, simulates, and asks before signing.</p></div>{!setupReady && <SetupPanel balances={chain.balances} activePolicy={chain.activePolicy} busy={busy || signer.isPending} onFaucet={requestFaucet} onDeep={prepareDeepBootstrap} onPolicy={createPolicy} />}<div className={`swap-layout ${guardian ? "has-results" : "intent-only"}`}><div className="column"><div className="card"><div className="card-header"><b>Your Intent</b><small>SUI ↔ DBUSDC</small></div><div className="card-body"><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Swap 1 SUI to DBUSDC with max 1% slippage" /><div className="chips">{samples.map((sample) => <button key={sample} onClick={() => setText(sample)}>{sample}</button>)}</div><button className="primary" onClick={parseAndGuard} disabled={busy}>{busy ? "Building guarded PTB preview..." : "Parse Intent & Preview Swap"}</button></div></div>{intent && <div className="card"><div className="card-header"><b>Parsed Intent</b><span className="pill clear">Validated</span></div><div className="card-body parsed-grid"><Field label="Input Asset" value={intent.inputAsset} /><Field label="Output Asset" value={intent.outputAsset} /><Field label="Amount" value={`${intent.amount} ${intent.inputAsset}`} /><Field label="Max Slippage" value={`${intent.maxSlippageBps / 100}%`} /><Field label="Risk Tolerance" value={intent.riskTolerance} /></div></div>}</div><div className="column">{guardian && <><div className="card"><div className="card-header"><b>Aegis Analysis</b><span className={`pill ${guardian.verdict}`}>{guardian.verdict.toUpperCase()} · {guardian.dataMode}</span></div><div className="card-body"><div className="score"><strong className={guardian.verdict}>{guardian.score}</strong><span><b>Deterministic risk score</b><small>0 clear · 40 warn · 70 block</small><i><em style={{ width: `${guardian.score}%` }} /></i></span></div><div className={`verdict ${guardian.verdict}`}>{guardian.verdict === "clear" ? "Safe to prepare" : guardian.verdict === "warn" ? "Risks detected; acknowledgement required" : "Execution blocked"}</div><RiskRows result={guardian} /><p className={`guardian-message ${guardian.verdict}`}>{guardian.explanation}</p></div></div>{plan && <div className="card"><div className="card-header"><b>Human-readable PTB Preview</b><small>fresh for 60 seconds</small></div><div className="card-body parsed-grid"><Field label="Policy" value={short(plan.policyId)} /><Field label="Pool" value={short(plan.poolId)} /><Field label="Expected output" value={`${guardian.expectedOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="Minimum output" value={`${plan.minOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="DEEP fee budget" value={plan.deepBudget.toFixed(6)} /><Field label="Snapshot" value={new Date(plan.createdAt).toLocaleTimeString()} /></div><div className="ptb">{[["Assert GuardianPolicy", "Move"], [`DeepBook swap ${plan.amount} ${plan.inputAsset}`, "DeepBook"], ["Mint IntentReceipt", "Move"]].map(([label, protocol], index) => <div key={label}><span>{index + 1}</span><b>{label}</b><em>{protocol}</em></div>)}</div><div className="atomic">Atomic: all three calls succeed together or the transaction reverts.</div><div className="confirm">{simulation && <div className={`verdict ${simulation.success ? "clear" : "block"}`}>{simulation.success ? `Dry run passed · gas ${simulation.gasEstimate}` : friendlyTxError(simulation.error)}</div>}{executionGate && <div className="verdict block">{executionGate}</div>}{balanceGate && <div className="verdict block">{balanceGate}</div>}{planStale && <button className="secondary-action" disabled={busy} onClick={rerunGuardian}>Re-run Guardian with live data</button>}{guardian.verdict === "warn" && <label><input type="checkbox" checked={ack} onChange={(event) => setAck(event.target.checked)} /> I understand the identified Aegis risks.</label>}<button className={canExecute ? "primary" : "disabled"} disabled={!canExecute || busy || signer.isPending} onClick={prepareExecution}>{canExecute ? "Review & Sign Atomic PTB" : "Execution gate not satisfied"}</button></div></div>}{digest && <div className="receipt"><b>Transaction executed and IntentReceipt minted</b><code>{digest}</code><a href={explorerTx(digest)} target="_blank" rel="noreferrer">View on Sui Explorer ↗</a></div>}</>}</div></div></>}
+        {page === "settings" && <SettingsPage configured={chain.configured} activePolicy={chain.activePolicy} address={account.address} balances={chain.balances} receiptCount={chain.receipts.length} />}
+        {page === "swap" && <><div className="intent-intro"><h1>New Intent</h1><p className="page-sub">Describe a financial goal. Aegis compiles, checks, simulates, and asks before signing.</p></div>{!setupReady && <SetupPanel balances={chain.balances} activePolicy={chain.activePolicy} busy={busy || signer.isPending} onFaucet={requestFaucet} onDeep={prepareDeepBootstrap} onPolicy={createPolicy} />}<div className={`swap-layout ${guardian ? "has-results" : "intent-only"}`}><div className="column"><div className="card"><div className="card-header"><b>Your Intent</b><small>SUI ↔ DBUSDC</small></div><div className="card-body"><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Swap 1 SUI to DBUSDC with max 1% slippage" /><div className="chips">{samples.map((sample) => <button key={sample} onClick={() => setText(sample)}>{sample}</button>)}</div><button className="primary" onClick={parseAndGuard} disabled={busy}>{busy ? "Building guarded PTB preview..." : "Parse Intent & Preview Swap"}</button></div></div>{intent && <div className="card"><div className="card-header"><b>Parsed Intent</b><span className="pill clear">Validated</span></div><div className="card-body parsed-grid"><Field label="Input Asset" value={intent.inputAsset} /><Field label="Output Asset" value={intent.outputAsset} /><Field label="Amount" value={`${intent.amount} ${intent.inputAsset}`} /><Field label="Max Slippage" value={`${intent.maxSlippageBps / 100}%`} /><Field label="Risk Tolerance" value={intent.riskTolerance} /></div></div>}</div><div className="column">{guardian && <><div className="card"><div className="card-header"><b>Aegis Analysis</b><span className={`pill ${guardian.verdict}`}>{guardian.verdict.toUpperCase()} · {guardian.dataMode}</span></div><div className="card-body"><div className="score"><strong className={guardian.verdict}>{guardian.score}</strong><span><b>Deterministic risk score</b><small>0 clear · 40 warn · 70 block</small><i><em style={{ width: `${guardian.score}%` }} /></i></span></div><div className={`verdict ${guardian.verdict}`}>{guardian.verdict === "clear" ? "Safe to prepare" : guardian.verdict === "warn" ? "Risks detected; acknowledgement required" : "Execution blocked"}</div><RiskRows result={guardian} /><p className={`guardian-message ${guardian.verdict}`}>{guardian.explanation}</p></div></div>{plan && <div className="card"><div className="card-header"><b>Human-readable PTB Preview</b><small>fresh for 60 seconds</small></div><div className="card-body parsed-grid"><Field label="Policy" value={short(plan.policyId)} /><Field label="Pool" value={short(plan.poolId)} /><Field label="Expected output" value={`${guardian.expectedOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="Minimum output" value={`${plan.minOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="DEEP fee budget" value={plan.deepBudget.toFixed(6)} /><Field label="Snapshot" value={new Date(plan.createdAt).toLocaleTimeString()} /></div><div className="ptb">{[["Assert GuardianPolicy", "Move"], [`DeepBook swap ${plan.amount} ${plan.inputAsset}`, "DeepBook"], ["Mint IntentReceipt", "Move"]].map(([label, protocol], index) => <div key={label}><span>{index + 1}</span><b>{label}</b><em>{protocol}</em></div>)}</div><div className="atomic">Atomic: all three calls succeed together or the transaction reverts.</div><div className="confirm">{simulation && <div className={`verdict ${simulation.success ? "clear" : "block"}`}>{simulation.success ? `Dry run passed · gas ${simulation.gasEstimate}` : friendlyTxError(simulation.error)}</div>}{executionGate && <div className="verdict block">{executionGate}</div>}{balanceGate && <div className="verdict block">{balanceGate}</div>}{planStale && <button className="secondary-action" disabled={busy} onClick={rerunGuardian}>Re-run Guardian with live data</button>}{guardian.verdict === "warn" && <label><input type="checkbox" checked={ack} onChange={(event) => setAck(event.target.checked)} /> I understand the identified Aegis risks.</label>}<button className={canExecute ? "primary" : "disabled"} disabled={!canExecute || busy || signer.isPending} onClick={prepareExecution}>{canExecute ? "Review & Sign Atomic PTB" : "Execution gate not satisfied"}</button></div></div>}{digest && <div className="receipt"><b>Transaction executed and IntentReceipt minted</b><code>{digest}</code><a href={explorerTx(digest)} target="_blank" rel="noreferrer">Verify on SuiScan ↗</a></div>}</>}</div></div></>}
       </section>
     </main>
     {pendingAction && <div className="modal-backdrop"><div className="confirm-modal"><span className="logo-mark">A</span><h2>{pendingAction.title}</h2><p>{pendingAction.detail}</p><div><button onClick={() => setPendingAction(null)} disabled={busy || signer.isPending}>Cancel</button><button className="primary" onClick={pendingAction.run} disabled={busy || signer.isPending}>{busy || signer.isPending ? "Awaiting wallet..." : "Confirm in wallet"}</button></div></div></div>}
