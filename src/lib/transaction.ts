@@ -201,6 +201,8 @@ export function buildDeepBootstrapTransaction(address: string, suiAmount: number
   const client = new SuiJsonRpcClient({ network: "testnet", url: "https://fullnode.testnet.sui.io:443" });
   const deepbook = new DeepBookClient({ client, address, network: "testnet" });
   const tx = new Transaction();
+  // DEEP_SUI base is DEEP and quote is SUI. Supplying exact quote (SUI)
+  // returns base (DEEP), so amount is SUI units and minOut is DEEP units.
   const [deepOut, suiOut, feeOut] = deepbook.deepBook.swapExactQuoteForBase({
     poolKey: "DEEP_SUI",
     amount: suiAmount,

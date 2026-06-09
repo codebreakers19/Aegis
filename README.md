@@ -314,6 +314,8 @@ The Move package is named `aegis`, with the main module:
 aegis::guardian
 ```
 
+Note: `move/Move.lock` may still show the original root package alias `intent_guardian` because it is a generated lock file from the first publication cycle. The source manifest and module used for the current code are `Move.toml` package `aegis` and module `aegis::guardian`.
+
 ### GuardianPolicy Object
 
 ```move
@@ -428,10 +430,13 @@ flowchart TB
 | UpgradeCap | `0x6dc878e6c89761c36d14205ebbf345bbb01a609f702c633bbd68dbb4cb389350` |
 | Publish transaction | [`78urbD...ExWL`](https://suiexplorer.com/txblock/78urbD7QrRsrCES6FctQbrg5z2cKm5She1kSeSbrExWL?network=testnet) |
 | SUI/DBUSDC pool | `0x1c19362ca52b8ffd7a33cee805a67d40f31e6ba303753fd3a4cfdfacea7163a5` |
-| Proof policy | [`0x85cc...c560`](https://suiexplorer.com/object/0x85cc37e385369cb39f63cdbe04b5ad6bed8d1ae727ddd091009760dc9b50c560?network=testnet) |
+| Active proof policy | [`0x5b2b...086c`](https://suiexplorer.com/object/0x5b2b778118b3142cc9d52cc60123438d9fcd1a6bd04a502910607424a464086c?network=testnet) |
+| Revoked proof policy | [`0x85cc...c560`](https://suiexplorer.com/object/0x85cc37e385369cb39f63cdbe04b5ad6bed8d1ae727ddd091009760dc9b50c560?network=testnet) |
 | Atomic proof transaction | [`BAgizt...koT4`](https://suiexplorer.com/txblock/BAgizt4dbnW3untoXgnkD5ReCyUmJBCDDvJp15VpkoT4?network=testnet) |
 | Proof receipt | [`0x0c20...bbf8`](https://suiexplorer.com/object/0x0c20dfb27bab5ea1c52ad17b89c5274eb07f8c9727aa9af673329aa8377abbf8?network=testnet) |
 | Revocation transaction | [`FKxRbW...wFXh`](https://suiexplorer.com/txblock/FKxRbWg8wc6Gak5rKzEcwwgn9aRrdFtdHg7dpHTiwFXh?network=testnet) |
+
+The revoked proof policy above is intentionally revoked at the end of the recorded proof flow to demonstrate persistent on-chain revocation. The active proof policy is non-revoked and can be used for judge inspection of the live policy object. For a fresh live execution proof, fund the proof wallet with at least 1 SUI plus gas and run the proof helper with `--keep-policy-active`.
 
 ### Verified Proof Result
 
@@ -476,9 +481,11 @@ Create `.env.local`:
 OPENAI_API_KEY=your_server_side_key
 OPENAI_MODEL=gpt-4o-mini
 NEXT_PUBLIC_GUARDIAN_PACKAGE_ID=0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d
+NEXT_PUBLIC_SITE_URL=https://your-production-domain.example
 ```
 
 `OPENAI_API_KEY` remains server-side. Policies are discovered from the connected wallet, so there is no global policy ID.
+Set `NEXT_PUBLIC_SITE_URL` to the final production origin so canonical metadata, `robots.txt`, and `sitemap.xml` use the correct public URL.
 
 ### Start
 
@@ -605,14 +612,23 @@ The proof helper uses the funded local Sui CLI wallet and the same Mysten/DeepBo
 node tools/testnet-proof.mjs
 ```
 
+For submission screenshots or judge links where the policy should remain active, run:
+
+```bash
+node tools/testnet-proof.mjs --keep-policy-active
+```
+
 It performs:
 
 1. DEEP bootstrap if required
-2. Live SUI/DBUSDC quote
-3. Exact PTB dry run
-4. Atomic policy assertion, DeepBook swap, and receipt mint
-5. Policy update
-6. Persistent policy revocation
+2. Fresh GuardianPolicy creation
+3. Live SUI/DBUSDC quote
+4. Exact PTB dry run
+5. Atomic policy assertion, DeepBook swap, and receipt mint
+6. Policy update
+7. Persistent policy revocation unless `--keep-policy-active` is provided
+
+The DEEP bootstrap path uses the `DEEP_SUI` pool with DEEP as base and SUI as quote. Supplying SUI to acquire DEEP therefore uses `swapExactQuoteForBase`; the input amount is SUI and the minimum output is DEEP.
 
 ---
 

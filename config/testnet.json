@@ -11,12 +11,15 @@
   "explorer": {
     "package": "https://suiexplorer.com/object/0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d?network=testnet",
     "publishTransaction": "https://suiexplorer.com/txblock/78urbD7QrRsrCES6FctQbrg5z2cKm5She1kSeSbrExWL?network=testnet",
+    "activePolicy": "https://suiexplorer.com/object/0x5b2b778118b3142cc9d52cc60123438d9fcd1a6bd04a502910607424a464086c?network=testnet",
     "policy": "https://suiexplorer.com/object/0x85cc37e385369cb39f63cdbe04b5ad6bed8d1ae727ddd091009760dc9b50c560?network=testnet",
     "executionTransaction": "https://suiexplorer.com/txblock/BAgizt4dbnW3untoXgnkD5ReCyUmJBCDDvJp15VpkoT4?network=testnet",
     "receipt": "https://suiexplorer.com/object/0x0c20dfb27bab5ea1c52ad17b89c5274eb07f8c9727aa9af673329aa8377abbf8?network=testnet",
     "revocationTransaction": "https://suiexplorer.com/txblock/FKxRbWg8wc6Gak5rKzEcwwgn9aRrdFtdHg7dpHTiwFXh?network=testnet"
   },
   "proof": {
+    "activePolicyId": "0x5b2b778118b3142cc9d52cc60123438d9fcd1a6bd04a502910607424a464086c",
+    "activePolicyCreateDigest": "4t5DU3DBLmjqdFemnWDMwWh795ZjKE49qNPuURU4LoYf",
     "policyId": "0x85cc37e385369cb39f63cdbe04b5ad6bed8d1ae727ddd091009760dc9b50c560",
     "policyCreateDigest": "8cFHyXkBPFUFxU6tqizBixr3j2fVyykW65nBkjvgwF8k",
     "deepBootstrapDigest": "Hyk2TzsZH5WPUbmzHduH1k8j2pjC185HcvedhSRqrEQF",

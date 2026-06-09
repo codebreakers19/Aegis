@@ -79,7 +79,7 @@ function friendlyTxError(error?: string) {
 }
 
 function Logo() {
-  return <Link className="sidebar-logo" href="/"><span className="logo-mark">A</span><span><b>Aegis</b><small>Intent Guardian</small></span></Link>;
+  return <Link className="sidebar-logo" href="/"><span><b>Aegis</b><small>Intent Guardian</small></span></Link>;
 }
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -230,7 +230,6 @@ function PolicyPage({ policies, activePolicy, busy, onCreate, onUpdate, onRevoke
       const status = policy.revoked ? "Revoked" : activePolicy?.objectId === policy.objectId ? "Active" : "Expired";
       return <article className="policy-card" key={policy.objectId}>
         <div className="policy-card-head">
-          <span className="logo-mark">A</span>
           <div><small>GuardianPolicy object</small><h2>{short(policy.objectId)}</h2><code>{policy.objectId}</code></div>
           <span className={`pill ${policy.revoked ? "block" : activePolicy?.objectId === policy.objectId ? "clear" : "warn"}`}>{status}</span>
         </div>
@@ -305,9 +304,9 @@ function SidebarWalletCard({ address, balances, open, copied, onToggle, onCopy, 
   onDisconnect: () => void;
 }) {
   return <div className="wallet-card sidebar-wallet">
-    <button className="sidebar-wallet-trigger" onClick={onToggle}>
+    <button className="sidebar-wallet-trigger" onClick={onToggle} aria-expanded={open} aria-label={open ? "Close wallet menu" : "Manage connected wallet"}>
       <span><code>{short(address)}</code><small><i /> testnet</small></span>
-      <b>⌄</b>
+      <b>{open ? "Close" : "Manage"}</b>
     </button>
     <div className="balance-line"><span>{balances.sui.toFixed(3)} SUI</span><span>{balances.deep.toFixed(3)} DEEP</span></div>
     {open && <div className="sidebar-wallet-dropdown">
@@ -341,6 +340,7 @@ export default function Dashboard() {
   const [digest, setDigest] = useState("");
   const [walletOpen, setWalletOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [successDigest, setSuccessDigest] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [clockNow, setClockNow] = useState(() => Date.now());
 
@@ -352,6 +352,12 @@ export default function Dashboard() {
     const timer = window.setInterval(() => setClockNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!successDigest) return;
+    const hideTimer = window.setTimeout(() => setSuccessDigest(""), 5_000);
+    return () => window.clearTimeout(hideTimer);
+  }, [successDigest]);
 
   const executionGate = executionBlockReason(plan, chain.activePolicy, clockNow);
   const balanceGate = balanceBlockReason(plan, chain.balances);
@@ -383,6 +389,7 @@ export default function Dashboard() {
         try {
           const result = await signer.mutateAsync({ transaction: makeTransaction() });
           after?.(result.digest);
+          if (after) setSuccessDigest(result.digest);
           chain.refresh();
           invalidateExecutionState();
           setPendingAction(null);
@@ -513,7 +520,7 @@ export default function Dashboard() {
     void signTransaction("Sign atomic Aegis PTB", `${plan.amount} ${plan.inputAsset} → minimum ${plan.minOutput.toFixed(6)} ${plan.outputAsset}. Policy assertion, DeepBook swap, and receipt mint execute atomically.`, () => buildIntentTransaction(account.address, plan), setDigest);
   }
 
-  if (connectionStatus !== "connected" || !account) return <div className="wallet-gate"><span className="logo-mark">A</span><b>Checking Sui wallet connection...</b><small>Disconnected users are redirected to the landing page.</small></div>;
+  if (connectionStatus !== "connected" || !account) return <div className="wallet-gate"><b>Aegis</b><small>Checking Sui wallet connection...</small><small>Disconnected users are redirected to the landing page.</small></div>;
 
   return <div className="dashboard">
     <aside className="sidebar"><Logo /><div className="sidebar-section"><small>Main</small>{nav.slice(0, 3).map(([id, icon, label]) => <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><span>{icon}</span>{label}</button>)}</div><div className="sidebar-section"><small>Manage</small>{nav.slice(3).map(([id, icon, label]) => <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><span>{icon}</span>{label}</button>)}</div><div className="sidebar-section resources"><small>Resources</small><a href="https://docs.sui.io/" target="_blank">📖 Sui Docs</a><a href="https://suiexplorer.com/?network=testnet" target="_blank">🔍 Explorer ↗</a></div><SidebarWalletCard address={account.address} balances={chain.balances} open={walletOpen} copied={copied} onToggle={() => setWalletOpen(!walletOpen)} onCopy={async () => { await navigator.clipboard.writeText(account.address); setCopied(true); }} onDisconnect={disconnectAndExit} /></aside>
@@ -521,6 +528,7 @@ export default function Dashboard() {
       <section className="page">
         {chain.error && <div className="error page-error">{chain.error}</div>}
         {error && <div className="error page-error">{error}</div>}
+        {successDigest && <div className="success-toast"><span><b>Execution confirmed</b><small>IntentReceipt flow completed on Sui testnet.</small></span><a href={explorerTx(successDigest)} target="_blank" rel="noreferrer">Open transaction ↗</a></div>}
         {page === "history" && <><div className="page-heading"><h1>Transaction History</h1><p className="page-sub">Transaction-first timeline. Click a row to verify the swap transaction and related objects.</p></div><ProofList receipts={chain.receipts} mode="history" /></>}
         {page === "receipts" && <><div className="page-heading"><h1>My IntentReceipts</h1><p className="page-sub">Receipt-first proof objects. Click a row to inspect the minted IntentReceipt object and its source transaction.</p></div><ProofList receipts={chain.receipts} mode="receipts" /></>}
         {page === "analytics" && <AnalyticsPage receipts={chain.receipts} />}
@@ -529,6 +537,6 @@ export default function Dashboard() {
         {page === "swap" && <><div className="intent-intro"><h1>New Intent</h1><p className="page-sub">Describe a financial goal. Aegis compiles, checks, simulates, and asks before signing.</p></div>{!setupReady && <SetupPanel balances={chain.balances} activePolicy={chain.activePolicy} busy={busy || signer.isPending} onFaucet={requestFaucet} onDeep={prepareDeepBootstrap} onPolicy={createPolicy} />}<div className={`swap-layout ${guardian ? "has-results" : "intent-only"}`}><div className="column"><div className="card"><div className="card-header"><b>Your Intent</b><small>SUI ↔ DBUSDC</small></div><div className="card-body"><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Swap 1 SUI to DBUSDC with max 1% slippage" /><div className="chips">{samples.map((sample) => <button key={sample} onClick={() => setText(sample)}>{sample}</button>)}</div><button className="primary" onClick={parseAndGuard} disabled={busy}>{busy ? "Building guarded PTB preview..." : "Parse Intent & Preview Swap"}</button></div></div>{intent && <div className="card"><div className="card-header"><b>Parsed Intent</b><span className="pill clear">Validated</span></div><div className="card-body parsed-grid"><Field label="Input Asset" value={intent.inputAsset} /><Field label="Output Asset" value={intent.outputAsset} /><Field label="Amount" value={`${intent.amount} ${intent.inputAsset}`} /><Field label="Max Slippage" value={`${intent.maxSlippageBps / 100}%`} /><Field label="Risk Tolerance" value={intent.riskTolerance} /></div></div>}</div><div className="column">{guardian && <><div className="card"><div className="card-header"><b>Aegis Analysis</b><span className={`pill ${guardian.verdict}`}>{guardian.verdict.toUpperCase()} · {guardian.dataMode}</span></div><div className="card-body"><div className="score"><strong className={guardian.verdict}>{guardian.score}</strong><span><b>Deterministic risk score</b><small>0 clear · 40 warn · 70 block</small><i><em style={{ width: `${guardian.score}%` }} /></i></span></div><div className={`verdict ${guardian.verdict}`}>{guardian.verdict === "clear" ? "Safe to prepare" : guardian.verdict === "warn" ? "Risks detected; acknowledgement required" : "Execution blocked"}</div><RiskRows result={guardian} /><p className={`guardian-message ${guardian.verdict}`}>{guardian.explanation}</p></div></div>{plan && <div className="card"><div className="card-header"><b>Human-readable PTB Preview</b><small>fresh for 60 seconds</small></div><div className="card-body parsed-grid"><Field label="Policy" value={short(plan.policyId)} /><Field label="Pool" value={short(plan.poolId)} /><Field label="Expected output" value={`${guardian.expectedOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="Minimum output" value={`${plan.minOutput.toFixed(6)} ${plan.outputAsset}`} /><Field label="DEEP fee budget" value={plan.deepBudget.toFixed(6)} /><Field label="Snapshot" value={new Date(plan.createdAt).toLocaleTimeString()} /></div><div className="ptb">{[["Assert GuardianPolicy", "Move"], [`DeepBook swap ${plan.amount} ${plan.inputAsset}`, "DeepBook"], ["Mint IntentReceipt", "Move"]].map(([label, protocol], index) => <div key={label}><span>{index + 1}</span><b>{label}</b><em>{protocol}</em></div>)}</div><div className="atomic">Atomic: all three calls succeed together or the transaction reverts.</div><div className="confirm">{simulation && <div className={`verdict ${simulation.success ? "clear" : "block"}`}>{simulation.success ? `Dry run passed · gas ${simulation.gasEstimate}` : friendlyTxError(simulation.error)}</div>}{executionGate && <div className="verdict block">{executionGate}</div>}{balanceGate && <div className="verdict block">{balanceGate}</div>}{planStale && <button className="secondary-action" disabled={busy} onClick={rerunGuardian}>Re-run Guardian with live data</button>}{guardian.verdict === "warn" && <label><input type="checkbox" checked={ack} onChange={(event) => setAck(event.target.checked)} /> I understand the identified Aegis risks.</label>}<button className={canExecute ? "primary" : "disabled"} disabled={!canExecute || busy || signer.isPending} onClick={prepareExecution}>{canExecute ? "Review & Sign Atomic PTB" : "Execution gate not satisfied"}</button></div></div>}{digest && <div className="receipt"><b>Transaction executed and IntentReceipt minted</b><code>{digest}</code><a href={explorerTx(digest)} target="_blank" rel="noreferrer">Verify on SuiScan ↗</a></div>}</>}</div></div></>}
       </section>
     </main>
-    {pendingAction && <div className="modal-backdrop"><div className="confirm-modal"><span className="logo-mark">A</span><h2>{pendingAction.title}</h2><p>{pendingAction.detail}</p><div><button onClick={() => setPendingAction(null)} disabled={busy || signer.isPending}>Cancel</button><button className="primary" onClick={pendingAction.run} disabled={busy || signer.isPending}>{busy || signer.isPending ? "Awaiting wallet..." : "Confirm in wallet"}</button></div></div></div>}
+    {pendingAction && <div className="modal-backdrop"><div className="confirm-modal"><small>Wallet confirmation</small><h2>{pendingAction.title}</h2><p>{pendingAction.detail}</p><div><button onClick={() => setPendingAction(null)} disabled={busy || signer.isPending}>Cancel</button><button className="primary" onClick={pendingAction.run} disabled={busy || signer.isPending}>{busy || signer.isPending ? "Awaiting wallet..." : "Confirm in wallet"}</button></div></div></div>}
   </div>;
 }
