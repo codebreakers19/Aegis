@@ -2,6 +2,10 @@
 
 ### AI-native intent execution protected by enforceable Sui Move policies
 
+![Aegis product flow: plain-English intent, deterministic risk Guardian, atomic Sui PTB, and on-chain IntentReceipt](public/banner.png)
+
+_Conceptual product overview. The current executable testnet market is SUI/DBUSDC, and live market values are read from DeepBook at runtime._
+
 [![Sui Testnet](https://img.shields.io/badge/Sui-Testnet-4DA2FF?style=for-the-badge)](https://suiexplorer.com/object/0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d?network=testnet)
 [![DeepBook](https://img.shields.io/badge/DeepBook-Live%20Swap-111111?style=for-the-badge)](https://suiexplorer.com/txblock/BAgizt4dbnW3untoXgnkD5ReCyUmJBCDDvJp15VpkoT4?network=testnet)
 [![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-10A37F?style=for-the-badge)](https://platform.openai.com/)

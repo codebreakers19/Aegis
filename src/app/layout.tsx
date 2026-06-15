@@ -33,6 +33,13 @@ export const metadata: Metadata = {
   keywords: siteConfig.keywords,
   alternates: { canonical: "/" },
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
   robots: {
     index: true,
     follow: true,
@@ -51,11 +58,13 @@ export const metadata: Metadata = {
     title: siteConfig.title,
     description: siteConfig.description,
     locale: "en_US",
+    images: [{ url: "/banner.png", width: 1672, height: 941, alt: "Aegis guarded intent execution flow on Sui" }],
   },
   twitter: {
     card: "summary_large_image",
     title: siteConfig.title,
     description: siteConfig.shortDescription,
+    images: ["/banner.png"],
   },
   other: { "theme-color": "#F7F3EE" },
 };

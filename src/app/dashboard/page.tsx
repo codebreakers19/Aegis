@@ -1,6 +1,7 @@
 "use client";
 
 import { useCurrentAccount, useCurrentWallet, useDisconnectWallet, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -79,7 +80,7 @@ function friendlyTxError(error?: string) {
 }
 
 function Logo() {
-  return <Link className="sidebar-logo" href="/"><span><b>Aegis</b><small>Intent Guardian</small></span></Link>;
+  return <Link className="sidebar-logo" href="/"><Image src="/icon-192.png" alt="" width={34} height={34} priority /><span><b>Aegis</b><small>Intent Guardian</small></span></Link>;
 }
 
 function Field({ label, value }: { label: string; value: string }) {
