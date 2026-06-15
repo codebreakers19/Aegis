@@ -16,6 +16,7 @@
     "@mysten/deepbook-v3": "^1.4.1",
     "@mysten/sui": "^2.17.0",
     "@tanstack/react-query": "^5.101.0",
+    "@vercel/analytics": "^2.0.1",
     "lucide-react": "^1.17.0",
     "motion": "^12.40.0",
     "next": "^16.2.9",
