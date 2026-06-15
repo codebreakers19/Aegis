@@ -19,7 +19,7 @@
 ## Verification
 
 - Move tests: 10 passed
-- TypeScript tests: 6 passed
+- TypeScript tests: 8 passed
 - ESLint: passed
 - Production build: passed
 - Live Guardian endpoint: verified against DeepBook testnet

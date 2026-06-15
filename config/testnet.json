@@ -20,6 +20,8 @@
   "proof": {
     "activePolicyId": "0x5b2b778118b3142cc9d52cc60123438d9fcd1a6bd04a502910607424a464086c",
     "activePolicyCreateDigest": "4t5DU3DBLmjqdFemnWDMwWh795ZjKE49qNPuURU4LoYf",
+    "activePolicyUpdateDigest": "513zdrHePoMBjjhEkBSc2ksJdzvBRjfuDn8BP2nEcKeY",
+    "activePolicyExpiresAt": "2026-08-31T23:59:59.000Z",
     "policyId": "0x85cc37e385369cb39f63cdbe04b5ad6bed8d1ae727ddd091009760dc9b50c560",
     "policyCreateDigest": "8cFHyXkBPFUFxU6tqizBixr3j2fVyykW65nBkjvgwF8k",
     "deepBootstrapDigest": "Hyk2TzsZH5WPUbmzHduH1k8j2pjC185HcvedhSRqrEQF",

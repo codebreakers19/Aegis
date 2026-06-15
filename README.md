@@ -431,12 +431,13 @@ flowchart TB
 | Publish transaction | [`78urbD...ExWL`](https://suiexplorer.com/txblock/78urbD7QrRsrCES6FctQbrg5z2cKm5She1kSeSbrExWL?network=testnet) |
 | SUI/DBUSDC pool | `0x1c19362ca52b8ffd7a33cee805a67d40f31e6ba303753fd3a4cfdfacea7163a5` |
 | Active proof policy | [`0x5b2b...086c`](https://suiexplorer.com/object/0x5b2b778118b3142cc9d52cc60123438d9fcd1a6bd04a502910607424a464086c?network=testnet) |
+| Active policy extension | [`513zdr...cKeY`](https://suiexplorer.com/txblock/513zdrHePoMBjjhEkBSc2ksJdzvBRjfuDn8BP2nEcKeY?network=testnet) |
 | Revoked proof policy | [`0x85cc...c560`](https://suiexplorer.com/object/0x85cc37e385369cb39f63cdbe04b5ad6bed8d1ae727ddd091009760dc9b50c560?network=testnet) |
 | Atomic proof transaction | [`BAgizt...koT4`](https://suiexplorer.com/txblock/BAgizt4dbnW3untoXgnkD5ReCyUmJBCDDvJp15VpkoT4?network=testnet) |
 | Proof receipt | [`0x0c20...bbf8`](https://suiexplorer.com/object/0x0c20dfb27bab5ea1c52ad17b89c5274eb07f8c9727aa9af673329aa8377abbf8?network=testnet) |
 | Revocation transaction | [`FKxRbW...wFXh`](https://suiexplorer.com/txblock/FKxRbWg8wc6Gak5rKzEcwwgn9aRrdFtdHg7dpHTiwFXh?network=testnet) |
 
-The revoked proof policy above is intentionally revoked at the end of the recorded proof flow to demonstrate persistent on-chain revocation. The active proof policy is non-revoked and can be used for judge inspection of the live policy object. For a fresh live execution proof, fund the proof wallet with at least 1 SUI plus gas and run the proof helper with `--keep-policy-active`.
+The revoked proof policy above is intentionally revoked at the end of the recorded proof flow to demonstrate persistent on-chain revocation. The active proof policy is non-revoked, extended through August 31, 2026, and can be used for judge inspection of the live policy object. For a fresh live execution proof, fund the proof wallet with at least 1 SUI plus gas and run the proof helper with `--keep-policy-active`.
 
 ### Verified Proof Result
 
@@ -580,7 +581,7 @@ sui move test
 
 | Suite | Result |
 | --- | --- |
-| TypeScript intent, Guardian, plan, atomic-unit, and gating tests | 6 passed |
+| TypeScript intent, Guardian, plan, atomic-unit, and gating tests | 8 passed |
 | Move policy, ceiling, ownership, expiry, revocation, pool, slippage, direction, and receipt tests | 10 passed |
 | ESLint | Passed |
 | Next.js production build | Passed |
