@@ -2,6 +2,8 @@
 
 ### AI-native intent execution protected by enforceable Sui Move policies
 
+[Live Product](https://aegis.nikhilraikwar.me) · [GitHub](https://github.com/NikhilRaikwar/Aegis)
+
 ![Aegis product flow: plain-English intent, deterministic risk Guardian, atomic Sui PTB, and on-chain IntentReceipt](public/banner.png)
 
 _Conceptual product overview. The current executable testnet market is SUI/DBUSDC, and live market values are read from DeepBook at runtime._
@@ -486,11 +488,11 @@ Create `.env.local`:
 OPENAI_API_KEY=your_server_side_key
 OPENAI_MODEL=gpt-4o-mini
 NEXT_PUBLIC_GUARDIAN_PACKAGE_ID=0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d
-NEXT_PUBLIC_SITE_URL=https://your-production-domain.example
+NEXT_PUBLIC_SITE_URL=https://aegis.nikhilraikwar.me
 ```
 
 `OPENAI_API_KEY` remains server-side. Policies are discovered from the connected wallet, so there is no global policy ID.
-Set `NEXT_PUBLIC_SITE_URL` to the final production origin so canonical metadata, `robots.txt`, and `sitemap.xml` use the correct public URL.
+`NEXT_PUBLIC_SITE_URL` keeps canonical metadata, `robots.txt`, `sitemap.xml`, and social sharing images on the public Aegis domain.
 
 ### Start
 

@@ -1,5 +1,6 @@
 export const siteConfig = {
   name: "Aegis",
+  author: "Nikhil Raikwar",
   title: "Aegis | Guarded AI Intent Execution on Sui",
   description:
     "Aegis turns plain-English DeFi goals into guarded Sui programmable transaction blocks using live DeepBook risk analysis, Move policy enforcement, explicit confirmation, and on-chain receipts.",
@@ -17,7 +18,12 @@ export const siteConfig = {
     "GuardianPolicy",
     "IntentReceipt",
     "Agentic Web",
+    "Sui Overflow 2026",
+    "AI DeFi",
+    "on-chain risk management",
+    "DeepBook swap",
+    "Sui testnet",
     "crypto risk",
   ],
-  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, ""),
+  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://aegis.nikhilraikwar.me").replace(/\/$/, ""),
 };
