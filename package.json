@@ -2,6 +2,8 @@
   "name": "aegis-intent-guardian",
   "version": "0.1.0",
   "private": true,
+  "author": "Nikhil Raikwar",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -16,7 +18,7 @@
     "@tanstack/react-query": "^5.101.0",
     "lucide-react": "^1.17.0",
     "motion": "^12.40.0",
-    "next": "16.2.7",
+    "next": "^16.2.9",
     "openai": "^6.42.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -27,8 +29,11 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.7",
+    "eslint-config-next": "^16.2.9",
     "typescript": "^5",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "postcss": "8.5.10"
   }
 }

@@ -5,7 +5,7 @@
 [![Sui Testnet](https://img.shields.io/badge/Sui-Testnet-4DA2FF?style=for-the-badge)](https://suiexplorer.com/object/0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d?network=testnet)
 [![DeepBook](https://img.shields.io/badge/DeepBook-Live%20Swap-111111?style=for-the-badge)](https://suiexplorer.com/txblock/BAgizt4dbnW3untoXgnkD5ReCyUmJBCDDvJp15VpkoT4?network=testnet)
 [![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-10A37F?style=for-the-badge)](https://platform.openai.com/)
-[![Tests](https://img.shields.io/badge/Tests-16%20Passing-2A7A4B?style=for-the-badge)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-18%20Passing-2A7A4B?style=for-the-badge)](#testing)
 
 Aegis is an **Agentic Web Sub-track 3 Intent Engine** built on Sui.
 
@@ -500,6 +500,24 @@ Open:
 http://localhost:3000
 ```
 
+### Deploy to Vercel
+
+Aegis is ready for a standard Vercel Next.js deployment:
+
+1. Import the public GitHub repository into Vercel.
+2. Keep the detected framework preset as **Next.js** and the build command as `npm run build`.
+3. Configure the environment variables below for Production, Preview, and Development.
+4. Deploy once, set `NEXT_PUBLIC_SITE_URL` to the assigned production origin, and redeploy so metadata, `robots.txt`, and `sitemap.xml` use the final URL.
+
+| Variable | Visibility | Vercel value |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | Secret, server-side only | Your OpenAI API key |
+| `OPENAI_MODEL` | Server-side | `gpt-4o-mini` |
+| `NEXT_PUBLIC_GUARDIAN_PACKAGE_ID` | Public | `0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d` |
+| `NEXT_PUBLIC_SITE_URL` | Public | Final Vercel production URL, without a trailing slash |
+
+Do not expose `OPENAI_API_KEY` as a `NEXT_PUBLIC_` variable. The application uses public Sui testnet RPC and DeepBook endpoints directly, so no additional blockchain API key is required.
+
 ---
 
 ## UI Testing Guide
@@ -731,4 +749,4 @@ intent-guardian/
 
 ## License
 
-Hackathon project. Add the intended production license before external distribution.
+[MIT License](LICENSE) - Copyright (c) 2026 Nikhil Raikwar.
