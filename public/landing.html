@@ -681,6 +681,20 @@ section {
 }
 .confirm-btn:hover { background: #2A2520; transform: translateY(-1px); }
 
+/* Automated landing demo */
+.demo-label{padding:2px 8px;margin-left:auto;border:1px solid rgba(77,162,255,.22);border-radius:100px;background:var(--sui-glow);color:var(--sui-dark);font:.62rem 'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em}
+.demo-stage{opacity:.18;transform:translateY(7px);filter:grayscale(.65);transition:opacity .45s ease,transform .45s ease,filter .45s ease}
+.demo-stage.is-visible{opacity:1;transform:translateY(0);filter:none}
+.ptb-step.demo-command{transition:border-color .3s ease,background .3s ease,transform .3s ease}
+.ptb-step.demo-command.is-running{border-color:rgba(77,162,255,.5);background:rgba(77,162,255,.09);transform:translateX(3px)}
+.ptb-step.demo-command.is-complete .ptb-step-num{background:var(--green);color:white}
+.confirm-btn.is-signing{background:var(--sui);animation:signingPulse .8s ease infinite alternate}
+.confirm-btn.is-complete{background:var(--green)}
+@keyframes signingPulse{to{box-shadow:0 0 0 5px rgba(77,162,255,.14)}}
+.demo-receipt{display:none;gap:4px;padding:10px 12px;border:1px solid rgba(42,122,75,.18);border-radius:8px;background:rgba(42,122,75,.08);color:var(--green)}
+.demo-receipt.is-visible{display:grid;animation:fadeUp .45s ease both}
+.demo-receipt b{font-size:.78rem}.demo-receipt code{color:var(--ink-muted);font:.65rem 'DM Mono',monospace}
+
 /* FEATURES */
 .features-bg {
   background: var(--ink);
@@ -1174,16 +1188,16 @@ footer {
 
       <!-- Guardian mockup -->
       <div>
-        <div class="guardian-card">
+        <div class="guardian-card" id="landingGuardianDemo">
           <!-- Header -->
           <div class="guardian-header">
-            <div class="guardian-title">🛡️ Guardian Analysis</div>
+            <div class="guardian-title">🛡️ Guardian Analysis <span class="demo-label">Automated demo</span></div>
             <div class="verdict-badge verdict-warn">⚠ WARN</div>
           </div>
 
           <div class="guardian-body">
             <!-- Score inline -->
-            <div class="score-row">
+            <div class="score-row demo-stage" data-demo-stage="score">
               <div class="score-num">54</div>
               <div class="score-meta">
                 <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -1197,7 +1211,7 @@ footer {
             </div>
 
             <!-- Risk rows with mini bars -->
-            <div class="risk-list">
+            <div class="risk-list demo-stage" data-demo-stage="risks">
               <div class="risk-row">
                 <div class="risk-name"><div class="risk-dot dot-green"></div>Price impact</div>
                 <div class="risk-mini-bar"><div class="risk-mini-fill" style="width:12%;background:var(--green)"></div></div>
@@ -1221,13 +1235,13 @@ footer {
             </div>
 
             <!-- Compact warning -->
-            <div class="guardian-message">
+            <div class="guardian-message demo-stage" data-demo-stage="warning">
               <span class="guardian-message-icon">⚠️</span>
               <span>Depth covers 3.2× your order — tight. Oracle updated 6 min ago. Consider reducing size.</span>
             </div>
 
             <!-- Live Market Snapshot -->
-            <div class="market-snap">
+            <div class="market-snap demo-stage" data-demo-stage="market">
               <div class="market-snap-cell">
                 <div class="market-snap-label">Mid Price</div>
                 <div class="market-snap-val">$0.842</div>
@@ -1246,22 +1260,22 @@ footer {
             </div>
 
             <!-- PTB Preview -->
-            <div class="ptb-card">
+            <div class="ptb-card demo-stage" data-demo-stage="ptb">
               <div class="ptb-header">📋 Transaction Preview</div>
               <div class="ptb-steps">
-                <div class="ptb-step">
+                <div class="ptb-step demo-command" data-command="0">
                   <div class="ptb-step-num">1</div>
                   <div class="ptb-step-label">Assert GuardianPolicy</div>
                   <div class="ptb-step-proto">Move</div>
                 </div>
                 <div class="ptb-arrow">↓</div>
-                <div class="ptb-step">
+                <div class="ptb-step demo-command" data-command="1">
                   <div class="ptb-step-num">2</div>
                   <div class="ptb-step-label">Swap 500 SUI → ~421 DBUSDC</div>
                   <div class="ptb-step-proto">DeepBook</div>
                 </div>
                 <div class="ptb-arrow">↓</div>
-                <div class="ptb-step">
+                <div class="ptb-step demo-command" data-command="2">
                   <div class="ptb-step-num">3</div>
                   <div class="ptb-step-label">Mint IntentReceipt</div>
                   <div class="ptb-step-proto">Move</div>
@@ -1271,7 +1285,7 @@ footer {
             </div>
 
             <!-- Confirm -->
-            <div class="confirm-area">
+            <div class="confirm-area demo-stage" data-demo-stage="confirm">
               <label class="confirm-checkbox">
                 <input type="checkbox" id="ackCheck" onchange="toggleConfirm()">
                 I have read the Guardian warnings and understand the risks
@@ -1279,6 +1293,10 @@ footer {
               <button class="confirm-btn" id="confirmBtn" disabled style="opacity:0.4;cursor:not-allowed;">
                 ⚡ Sign &amp; Execute
               </button>
+              <div class="demo-receipt" id="demoReceipt">
+                <b>Atomic transaction executed · IntentReceipt minted</b>
+                <code>Landing simulation · open the app for a real Sui testnet signature</code>
+              </div>
             </div>
           </div>
         </div>
@@ -1413,6 +1431,79 @@ function toggleConfirm() {
   btn.style.opacity = checked ? '1' : '0.4';
   btn.style.cursor = checked ? 'pointer' : 'not-allowed';
 }
+
+// Automated Guardian -> PTB -> confirmation -> execution landing demonstration.
+const demoCard = document.getElementById('landingGuardianDemo');
+const demoStages = [...demoCard.querySelectorAll('.demo-stage')];
+const demoCommands = [...demoCard.querySelectorAll('.demo-command')];
+const demoButton = document.getElementById('confirmBtn');
+const demoCheckbox = document.getElementById('ackCheck');
+const demoReceipt = document.getElementById('demoReceipt');
+let demoTimers = [];
+let demoStarted = false;
+
+function after(delay, action) {
+  demoTimers.push(setTimeout(action, delay));
+}
+
+function resetGuardianDemo() {
+  demoTimers.forEach(clearTimeout);
+  demoTimers = [];
+  demoStages.forEach(stage => stage.classList.remove('is-visible'));
+  demoCommands.forEach(command => command.classList.remove('is-running', 'is-complete'));
+  demoCheckbox.checked = false;
+  demoButton.disabled = true;
+  demoButton.style.opacity = '0.4';
+  demoButton.style.cursor = 'not-allowed';
+  demoButton.classList.remove('is-signing', 'is-complete');
+  demoButton.innerHTML = '⚡ Sign &amp; Execute';
+  demoReceipt.classList.remove('is-visible');
+}
+
+function executeLandingDemo() {
+  demoButton.classList.add('is-signing');
+  demoButton.innerHTML = 'Signing atomic PTB…';
+  demoButton.disabled = true;
+  after(1150, () => {
+    demoButton.classList.remove('is-signing');
+    demoButton.classList.add('is-complete');
+    demoButton.innerHTML = '✓ Executed &amp; verified';
+    demoReceipt.classList.add('is-visible');
+  });
+  after(4300, runGuardianDemo);
+}
+
+demoButton.addEventListener('click', executeLandingDemo);
+
+function runGuardianDemo() {
+  resetGuardianDemo();
+  after(350, () => demoCard.querySelector('[data-demo-stage="score"]').classList.add('is-visible'));
+  after(900, () => demoCard.querySelector('[data-demo-stage="risks"]').classList.add('is-visible'));
+  after(1450, () => demoCard.querySelector('[data-demo-stage="warning"]').classList.add('is-visible'));
+  after(1900, () => demoCard.querySelector('[data-demo-stage="market"]').classList.add('is-visible'));
+  after(2450, () => demoCard.querySelector('[data-demo-stage="ptb"]').classList.add('is-visible'));
+  demoCommands.forEach((command, index) => {
+    after(2950 + index * 560, () => command.classList.add('is-running'));
+    after(3350 + index * 560, () => {
+      command.classList.remove('is-running');
+      command.classList.add('is-complete');
+    });
+  });
+  after(4850, () => demoCard.querySelector('[data-demo-stage="confirm"]').classList.add('is-visible'));
+  after(5500, () => {
+    demoCheckbox.checked = true;
+    toggleConfirm();
+  });
+  after(6250, () => demoButton.click());
+}
+
+const demoObserver = new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting && !demoStarted) {
+    demoStarted = true;
+    runGuardianDemo();
+  }
+}, { threshold: 0.35 });
+demoObserver.observe(demoCard);
 
 // Animate flow strip on scroll
 const steps = document.querySelectorAll('.flow-step');
