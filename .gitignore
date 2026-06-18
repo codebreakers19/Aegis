@@ -41,6 +41,9 @@ yarn-error.log*
 /.agents/
 /skills-lock.json
 
+# Local duplicate export; canonical assets are public/logo.png and public/banner.png
+/public/aegis logo.png
+
 # vercel
 .vercel
 

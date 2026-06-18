@@ -404,7 +404,7 @@ public struct IntentReceipt has key, store {
 flowchart TB
     START["Wallet-signed Programmable Transaction Block"]:::wallet
     ASSERT["1. aegis::guardian::assert_compliant<br/>Owner + limits + pool + expiry + revocation"]:::move
-    SWAP["2. DeepBook swap_exact_quantity<br/>SUI / DBUSDC"]:::deepbook
+    SWAP["2. DeepBook SDK swap<br/>swapExactBaseForQuote or swapExactQuoteForBase"]:::deepbook
     MINT["3. aegis::guardian::mint_receipt<br/>Receipt object + IntentExecuted event"]:::receipt
     SUCCESS["All calls succeed"]:::success
     REVERT["Any call fails: entire PTB reverts"]:::fail
