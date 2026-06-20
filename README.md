@@ -2,7 +2,7 @@
 
 ### AI-native intent execution protected by enforceable Sui Move policies
 
-[Live Product](https://aegis.nikhilraikwar.me) · [GitHub](https://github.com/NikhilRaikwar/Aegis)
+[Live Product](https://aegis.nikhilraikwar.me) · [Demo Video](https://youtu.be/0GR4WsiQHYg) · [GitHub](https://github.com/NikhilRaikwar/Aegis)
 
 ![Aegis product flow: plain-English intent, deterministic risk Guardian, atomic Sui PTB, and on-chain IntentReceipt](public/banner.png)
 
@@ -12,6 +12,7 @@ _Conceptual product overview. The current executable testnet market is SUI/DBUSD
 [![DeepBook](https://img.shields.io/badge/DeepBook-Live%20Swap-111111?style=for-the-badge)](https://suiexplorer.com/txblock/BAgizt4dbnW3untoXgnkD5ReCyUmJBCDDvJp15VpkoT4?network=testnet)
 [![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-10A37F?style=for-the-badge)](https://platform.openai.com/)
 [![Tests](https://img.shields.io/badge/Tests-18%20Passing-2A7A4B?style=for-the-badge)](#testing)
+[![Demo](https://img.shields.io/badge/Watch-Demo-FF0033?style=for-the-badge&logo=youtube)](https://youtu.be/0GR4WsiQHYg)
 
 Aegis is an **Agentic Web Sub-track 3 Intent Engine** built on Sui.
 
