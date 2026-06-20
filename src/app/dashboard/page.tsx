@@ -1,10 +1,11 @@
 "use client";
 
 import { useCurrentAccount, useCurrentWallet, useDisconnectWallet, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
+import { Archive, BarChart3, BookOpen, ClipboardList, FlaskConical, Search, Settings, Shield, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useAegisChainData, type GuardianPolicyRecord, type ReceiptRecord } from "@/hooks/useAegisChainData";
 import type { GuardianResult, StressScenario } from "@/lib/guardian";
 import type { ParsedIntent } from "@/lib/intent";
@@ -36,13 +37,13 @@ const samples = [
   "Swap 10 SUI to DBUSDC, aggressive",
 ];
 
-const nav: Array<[Page, string, string]> = [
-  ["swap", "⚡", "New Swap"],
-  ["history", "📋", "History"],
-  ["analytics", "📊", "Analytics"],
-  ["policy", "🛡️", "Guardian Policy"],
-  ["receipts", "🗂️", "My Receipts"],
-  ["settings", "⚙️", "Settings"],
+const nav: Array<[Page, ReactNode, string]> = [
+  ["swap", <Zap key="swap-icon" size={16} aria-hidden="true" />, "New Swap"],
+  ["history", <ClipboardList key="history-icon" size={16} aria-hidden="true" />, "History"],
+  ["analytics", <BarChart3 key="analytics-icon" size={16} aria-hidden="true" />, "Analytics"],
+  ["policy", <Shield key="policy-icon" size={16} aria-hidden="true" />, "Guardian Policy"],
+  ["receipts", <Archive key="receipts-icon" size={16} aria-hidden="true" />, "My Receipts"],
+  ["settings", <Settings key="settings-icon" size={16} aria-hidden="true" />, "Settings"],
 ];
 
 const short = (value: string) => value ? `${value.slice(0, 8)}...${value.slice(-6)}` : "—";
@@ -524,8 +525,8 @@ export default function Dashboard() {
   if (connectionStatus !== "connected" || !account) return <div className="wallet-gate"><b>Aegis</b><small>Checking Sui wallet connection...</small><small>Disconnected users are redirected to the landing page.</small></div>;
 
   return <div className="dashboard">
-    <aside className="sidebar"><Logo /><div className="sidebar-section"><small>Main</small>{nav.slice(0, 3).map(([id, icon, label]) => <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><span>{icon}</span>{label}</button>)}</div><div className="sidebar-section"><small>Manage</small>{nav.slice(3).map(([id, icon, label]) => <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><span>{icon}</span>{label}</button>)}</div><div className="sidebar-section resources"><small>Resources</small><a href="https://docs.sui.io/" target="_blank">📖 Sui Docs</a><a href="https://suiexplorer.com/?network=testnet" target="_blank">🔍 Explorer ↗</a></div><SidebarWalletCard address={account.address} balances={chain.balances} open={walletOpen} copied={copied} onToggle={() => setWalletOpen(!walletOpen)} onCopy={async () => { await navigator.clipboard.writeText(account.address); setCopied(true); }} onDisconnect={disconnectAndExit} /></aside>
-    <main className="dash-main"><header className="dash-top"><b>{activeNav?.[1]} {activeNav?.[2]}</b><div><button title="Deterministic non-executable data for risk demonstrations." className={stress ? "stress active" : "stress"} onClick={() => { setStress(!stress); invalidateExecutionState(); }}>🧪 Stress Mode {stress && <span>ACTIVE</span>}</button></div></header>{stress && <div className="stress-banner"><span>🧪 <b>Stress mode active</b> — deterministic demonstration data. Signing and execution are disabled.</span><div className="stress-scenarios">{(["clear", "warn", "block"] as StressScenario[]).map((scenario) => <button key={scenario} className={stressScenario === scenario ? `active ${scenario}` : ""} onClick={() => selectStressScenario(scenario)}>{scenario}</button>)}</div></div>}
+    <aside className="sidebar"><Logo /><div className="sidebar-section"><small>Main</small>{nav.slice(0, 3).map(([id, icon, label]) => <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><span>{icon}</span>{label}</button>)}</div><div className="sidebar-section"><small>Manage</small>{nav.slice(3).map(([id, icon, label]) => <button key={id} className={page === id ? "active" : ""} onClick={() => setPage(id)}><span>{icon}</span>{label}</button>)}</div><div className="sidebar-section resources"><small>Resources</small><a href="https://docs.sui.io/" target="_blank"><BookOpen size={16} aria-hidden="true" />Sui Docs</a><a href="https://suiexplorer.com/?network=testnet" target="_blank"><Search size={16} aria-hidden="true" />Explorer ↗</a></div><SidebarWalletCard address={account.address} balances={chain.balances} open={walletOpen} copied={copied} onToggle={() => setWalletOpen(!walletOpen)} onCopy={async () => { await navigator.clipboard.writeText(account.address); setCopied(true); }} onDisconnect={disconnectAndExit} /></aside>
+    <main className="dash-main"><header className="dash-top"><b>{activeNav?.[1]} {activeNav?.[2]}</b><div><button title="Deterministic non-executable data for risk demonstrations." className={stress ? "stress active" : "stress"} onClick={() => { setStress(!stress); invalidateExecutionState(); }}><FlaskConical size={15} aria-hidden="true" />Stress Mode {stress && <span>ACTIVE</span>}</button></div></header>{stress && <div className="stress-banner"><span><FlaskConical size={15} aria-hidden="true" /><b>Stress mode active</b> — deterministic demonstration data. Signing and execution are disabled.</span><div className="stress-scenarios">{(["clear", "warn", "block"] as StressScenario[]).map((scenario) => <button key={scenario} className={stressScenario === scenario ? `active ${scenario}` : ""} onClick={() => selectStressScenario(scenario)}>{scenario}</button>)}</div></div>}
       <section className="page">
         {chain.error && <div className="error page-error">{chain.error}</div>}
         {error && <div className="error page-error">{error}</div>}

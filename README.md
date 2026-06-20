@@ -599,20 +599,23 @@ The DEEP bootstrap path uses the `DEEP_SUI` pool with DEEP as base and SUI as qu
 | Validation | Zod |
 | Smart contract | Sui Move |
 | Testing | Vitest, Move unit tests, ESLint, Next.js build |
+| Analytics | Vercel Analytics |
 
 ---
 
 ## Repository Structure
 
 ```text
-intent-guardian/
+aegis/
 |-- config/
 |   `-- testnet.json              # Public deployment and proof manifest
 |-- move/
 |   |-- Move.toml
 |   `-- sources/guardian.move     # GuardianPolicy, receipt, events, tests
 |-- public/
-|   `-- landing.html              # Responsive landing design
+|   |-- landing.html              # Responsive landing design
+|   |-- banner.png                # README / OG / Twitter share image
+|   |-- icon-192.png, icon-512.png, favicon-64.png
 |-- src/
 |   |-- app/
 |   |   |-- api/                  # Intent, Guardian, faucet, DEEP bootstrap
@@ -622,7 +625,8 @@ intent-guardian/
 |   `-- lib/
 |       |-- guardian.ts           # Deterministic risk engine
 |       |-- intent.ts             # Structured intent schema and fallback
-|       `-- transaction.ts        # ExecutionPlan, gates, and PTB builders
+|       |-- transaction.ts        # ExecutionPlan, gates, and PTB builders
+|       `-- site.ts               # Site metadata config
 `-- tools/
     `-- testnet-proof.mjs         # Reproducible end-to-end proof
 ```

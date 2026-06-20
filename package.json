@@ -4,6 +4,14 @@
   "private": true,
   "author": "Nikhil Raikwar",
   "license": "MIT",
+  "homepage": "https://aegis.nikhilraikwar.me",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NikhilRaikwar/Aegis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NikhilRaikwar/Aegis/issues"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
