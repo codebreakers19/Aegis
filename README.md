@@ -526,6 +526,7 @@ sui move test
 | --- | --- |
 | TypeScript intent, Guardian, plan, atomic-unit, and gating tests | 8 passed |
 | Move policy, ceiling, ownership, expiry, revocation, pool, slippage, direction, and receipt tests | 10 passed |
+| Combined | **18 passed** |
 | ESLint | Passed |
 | Next.js production build | Passed |
 | Live DeepBook Guardian endpoint | Verified |

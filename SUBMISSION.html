@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aegis - Sui Overflow 2026 Submission Kit</title>
+  <style>
+    :root { --cream:#f7f3ee; --paper:#fffdf9; --ink:#1a1714; --muted:#706860; --line:#ded7ce; --blue:#2387ee; --green:#2a7a4b; --amber:#a76608; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--cream); color:var(--ink); font:16px/1.65 Georgia, serif; }
+    main { width:min(980px, calc(100% - 32px)); margin:32px auto; }
+    header, section { margin-bottom:18px; padding:28px; border:1px solid var(--line); border-radius:18px; background:var(--paper); }
+    h1, h2 { margin:0 0 8px; line-height:1.1; }
+    h1 { font-size:clamp(40px, 8vw, 78px); font-weight:400; }
+    h2 { font-size:25px; }
+    p { margin:8px 0; }
+    a { color:var(--blue); }
+    code { overflow-wrap:anywhere; font:13px/1.5 Consolas, monospace; }
+    .eyebrow, dt, th { color:var(--muted); font:700 11px/1.4 Consolas, monospace; letter-spacing:.08em; text-transform:uppercase; }
+    .tagline { max-width:760px; font-size:22px; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+    .chip { padding:5px 10px; border:1px solid var(--line); border-radius:999px; font:700 11px Consolas, monospace; }
+    .ready { color:var(--green); background:#edf7f1; }
+    .pending { color:var(--amber); background:#fff7e8; }
+    .grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
+    .field { padding:14px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+    .field dd { margin:4px 0 0; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:11px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    ol { padding-left:22px; }
+    .time { color:var(--blue); font:700 12px Consolas, monospace; }
+    .warning { padding:14px; border:1px solid #ebcf9f; border-radius:12px; background:#fff7e8; }
+    @media (max-width:700px) { main { width:min(100% - 20px, 980px); margin:10px auto; } header, section { padding:19px; } .grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Sui Overflow 2026 / Agentic Web / Intent Engine</div>
+    <h1>Aegis</h1>
+    <p class="tagline">AI-native intent execution protected by enforceable Sui Move policies.</p>
+    <div class="chips">
+      <span class="chip ready">Live on Sui testnet</span>
+      <span class="chip ready">Public repository</span>
+      <span class="chip ready">Atomic proof verified</span>
+      <span class="chip pending">Demo video URL required</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Submission Fields</h2>
+    <dl class="grid">
+      <div class="field"><dt>Project name</dt><dd>Aegis</dd></div>
+      <div class="field"><dt>Track</dt><dd>Agentic Web - Sub-track 3: Intent Engine</dd></div>
+      <div class="field"><dt>Website</dt><dd><a href="https://aegis.nikhilraikwar.me">aegis.nikhilraikwar.me</a></dd></div>
+      <div class="field"><dt>Source</dt><dd><a href="https://github.com/NikhilRaikwar/Aegis">github.com/NikhilRaikwar/Aegis</a></dd></div>
+      <div class="field"><dt>Deployment</dt><dd>Sui testnet</dd></div>
+      <div class="field"><dt>Builder</dt><dd>Nikhil Raikwar</dd></div>
+      <div class="field" style="grid-column:1/-1"><dt>Package ID</dt><dd><code>0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d</code></dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Project Description</h2>
+    <p>AI trading interfaces can generate transactions, but they cannot guarantee that a model-generated action respects the user's limits. A stale quote, hallucinated route, or compromised frontend can turn a convenient natural-language request into an unsafe financial transaction.</p>
+    <p>Aegis is an AI-native intent engine for Sui. A user describes a goal such as "Swap 1 SUI to USDC with maximum 1% slippage." OpenAI converts the request into a strictly validated SUI/DBUSDC intent. Aegis then reads live DeepBook market data, deterministically scores price impact, liquidity depth, market spread, and freshness, and explains those immutable results in plain English.</p>
+    <p>Before signing, the user sees a human-readable preview generated from the same typed <code>ExecutionPlan</code> used to build the transaction. Aegis dry-runs the exact Programmable Transaction Block, requires explicit confirmation, and requires additional acknowledgement for warning-level risk.</p>
+    <p>Sui is the security layer, not a payment rail added afterward. A user-owned <code>GuardianPolicy</code> Move object enforces direction-specific spending ceilings, maximum slippage, one allowed DeepBook pool, expiration, ownership, and persistent revocation. The final wallet-signed PTB atomically asserts that policy, executes the real DeepBook swap, and mints an owned <code>IntentReceipt</code> while emitting an <code>IntentExecuted</code> event. If any step fails, the entire transaction reverts.</p>
+    <p>Aegis currently runs on Sui testnet with an Explorer-verifiable package, active policy, real DeepBook execution, receipt, event history, analytics, and a deterministic non-executable stress mode. Next steps include additional DeepBook markets, Walrus-backed Guardian snapshots, Seal-encrypted private preferences, independent risk attestations, an audit, and mainnet deployment.</p>
+  </section>
+
+  <section>
+    <h2>Requirement Mapping</h2>
+    <table>
+      <tr><th>Requirement</th><th>Proof</th></tr>
+      <tr><td>Text to PTB to execution</td><td>OpenAI parser to typed ExecutionPlan to atomic testnet PTB</td></tr>
+      <tr><td>Human-readable PTB preview</td><td>Policy, pool, amounts, minimum output, DEEP fee, risks, calls, and dry-run gas</td></tr>
+      <tr><td>At least two risk classes</td><td>Price impact, liquidity depth, spread, and freshness</td></tr>
+      <tr><td>Explicit confirmation</td><td>Confirmation modal for all executions and warning acknowledgement gate</td></tr>
+      <tr><td>Meaningful Sui integration</td><td>Move policy, DeepBook swap, atomic PTB, receipt object, and events</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Public Proof</h2>
+    <table>
+      <tr><th>Artifact</th><th>Link</th></tr>
+      <tr><td>Move package</td><td><a href="https://suiexplorer.com/object/0x7e20acf1c946ad58cd3633ddd1fc37c323c063dc92de138fead88c5dcb42c71d?network=testnet">Inspect package</a></td></tr>
+      <tr><td>Active GuardianPolicy</td><td><a href="https://suiexplorer.com/object/0x5b2b778118b3142cc9d52cc60123438d9fcd1a6bd04a502910607424a464086c?network=testnet">Inspect active policy</a></td></tr>
+      <tr><td>Atomic guarded swap</td><td><a href="https://suiexplorer.com/txblock/BAgizt4dbnW3untoXgnkD5ReCyUmJBCDDvJp15VpkoT4?network=testnet">Inspect transaction</a></td></tr>
+      <tr><td>IntentReceipt</td><td><a href="https://suiexplorer.com/object/0x0c20dfb27bab5ea1c52ad17b89c5274eb07f8c9727aa9af673329aa8377abbf8?network=testnet">Inspect receipt</a></td></tr>
+      <tr><td>Revocation demo</td><td><a href="https://suiexplorer.com/txblock/FKxRbWg8wc6Gak5rKzEcwwgn9aRrdFtdHg7dpHTiwFXh?network=testnet">Inspect revocation</a></td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Three-Minute Demo Script</h2>
+    <ol>
+      <li><span class="time">0:00-0:18</span> Open with the risk: AI can generate a transaction, but generation is not enforcement. Show Aegis and state that user limits live in a Sui Move object.</li>
+      <li><span class="time">0:18-0:35</span> Show the four-step flow: plain-English intent, deterministic Guardian, atomic PTB, on-chain receipt.</li>
+      <li><span class="time">0:35-0:55</span> Connect a Sui testnet wallet and briefly show real SUI, DEEP, and GuardianPolicy readiness.</li>
+      <li><span class="time">0:55-1:20</span> Enter "Swap 0.1 SUI to USDC, max 1% slippage." Show OpenAI parsing USDC as DBUSDC.</li>
+      <li><span class="time">1:20-1:45</span> Show live Guardian score, four risk classes, data mode, and plain-English explanation.</li>
+      <li><span class="time">1:45-2:10</span> Show the human-readable PTB preview and successful exact dry run. Emphasize that preview and transaction share one typed plan.</li>
+      <li><span class="time">2:10-2:30</span> Confirm and sign. Cut loading time. Show the success receipt and transaction digest.</li>
+      <li><span class="time">2:30-2:47</span> Open the transaction proof and point out policy assertion, DeepBook swap, receipt mint, and <code>IntentExecuted</code> event.</li>
+      <li><span class="time">2:47-2:56</span> Show Stress Mode block or the revoked policy to prove unsafe flows cannot execute.</li>
+      <li><span class="time">2:56-3:00</span> Close: Aegis makes AI-directed DeFi understandable off-chain and enforceable on Sui.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Final Checklist</h2>
+    <table>
+      <tr><td>Live custom domain</td><td>Verified</td></tr>
+      <tr><td>Public GitHub repository and MIT license</td><td>Verified</td></tr>
+      <tr><td>OpenAI intent API</td><td>Verified live</td></tr>
+      <tr><td>Live DeepBook Guardian mode</td><td>Verified live</td></tr>
+      <tr><td>Atomic Sui transaction and receipt</td><td>Verified on testnet</td></tr>
+      <tr><td>TypeScript + Move tests</td><td>18 passed</td></tr>
+      <tr><td>Production build and lint</td><td>Passed</td></tr>
+      <tr><td>Demo video</td><td>Record, upload to YouTube, and add the URL in DeepSurge</td></tr>
+    </table>
+    <p class="warning"><strong>External action required:</strong> DeepSurge requires a demo video. Do not submit until the final YouTube URL is added to the submission form.</p>
+  </section>
+</main>
+</body>
+</html>
